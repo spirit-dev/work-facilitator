@@ -1,0 +1,30 @@
+version: "3.1"
+
+services:
+  work-facilitator:
+    image: spirit-dev/work-facilitator
+    # platform: linux/arm64
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      target: build
+    volumes:
+      - ../dist/:/code/dist
+  # work-facilitator-amd64:
+  #   image: spirit-dev/work-facilitator-amd64
+  #   platform: linux/amd64
+  #   build:
+  #     context: ../
+  #     dockerfile: docker/Dockerfile-amd64
+  #     target: build
+  #   volumes:
+  #     - ../mounts/:/code/dist
+  # work-facilitator-arm64:
+  #   image: spirit-dev/work-facilitator-arm64
+  #   platform: linux/arm64
+  #   build:
+  #     context: ../
+  #     dockerfile: docker/Dockerfile-arm64
+  #     target: build
+  #   volumes:
+  #     - ../mounts/:/code/dist
