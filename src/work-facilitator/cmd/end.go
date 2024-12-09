@@ -131,8 +131,10 @@ func endCommand(cmd *cobra.Command, args []string) {
 func init() {
 	rootCmd.AddCommand(endCmd)
 
+	helper.Quiet = true // Ensure the first call to newconfig is done quietly
 	RootConfig = helper.NewConfig()
 	RootRepo := helper.NewRepo(RootConfig)
+	helper.Quiet = false // Ensure to reset the value
 
 	var worklistStr string
 	for _, w := range RootRepo.Worklist {
@@ -140,5 +142,4 @@ func init() {
 	}
 
 	endCmd.Flags().StringVarP(&workEndArg, "work", "w", c.NOTGIVEN, "Work to end \n"+worklistStr)
-
 }

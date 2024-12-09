@@ -25,13 +25,6 @@ var useCmd = &cobra.Command{
 	Long:   "Use an existing workflow",
 	PreRun: usePreRunCommand,
 	Run:    useCommand,
-	// ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	// 	// if workUseArg != c.NOTGIVEN {
-	// 	return RootRepo.Worklist, cobra.ShellCompDirectiveNoFileComp
-	// 	// } else {
-	// 	// 	return nil, cobra.ShellCompDirectiveNoFileComp
-	// 	// }
-	// },
 }
 
 func usePreRunCommand(cmd *cobra.Command, args []string) {
@@ -92,8 +85,10 @@ func useCommand(cmd *cobra.Command, args []string) {
 func init() {
 	rootCmd.AddCommand(useCmd)
 
+	helper.Quiet = true // Ensure the first call to newconfig is done quietly
 	RootConfig = helper.NewConfig()
 	RootRepo := helper.NewRepo(RootConfig)
+	helper.Quiet = false // Ensure to reset the value
 
 	var worklistStr string
 	for _, w := range RootRepo.Worklist {
@@ -101,5 +96,4 @@ func init() {
 	}
 
 	useCmd.Flags().StringVarP(&workUseArg, "work", "w", c.NOTGIVEN, "Work to use \n"+worklistStr)
-
 }

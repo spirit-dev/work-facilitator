@@ -22,6 +22,8 @@ var (
 	repo    *git.Repository
 	repoCfg *config.Config
 	err     error
+
+	Quiet = false
 )
 
 const (
@@ -55,7 +57,9 @@ const (
 
 func NewRepo(wfConfig c.Config) c.Repo {
 
-	SpinStartDisplay("Repository config")
+	if !Quiet {
+		SpinStartDisplay("Repository config")
+	}
 
 	// Open repo
 	openRepo()
@@ -66,7 +70,9 @@ func NewRepo(wfConfig c.Config) c.Repo {
 		var password string
 		publicAuthKey, err = ssh.NewPublicKeysFromFile("git", wfConfig.SshKeyId, password)
 		if err != nil {
-			SpinStopDisplay("fail")
+			if !Quiet {
+				SpinStopDisplay("fail")
+			}
 			log.Fatalln(err)
 		}
 	}
@@ -83,7 +89,10 @@ func NewRepo(wfConfig c.Config) c.Repo {
 	// Parse Git URL
 	repoParsedUrl, err := giturls.Parse(originUrl)
 	if err != nil {
-		SpinStopDisplay("fail")
+
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 	nameS := strings.Split(repoParsedUrl.Path, "/")
@@ -106,12 +115,15 @@ func NewRepo(wfConfig c.Config) c.Repo {
 	worklist := repoConfigGenerateWorklist()
 
 	// Some diplays nicely
-	SpinStopDisplay("success")
-	if confInit {
-		SpinSideNoteDisplay("initialized .git/config file")
-	}
-	if remoteGot {
-		SpinSideNoteDisplay("updated remote branch")
+
+	if !Quiet {
+		SpinStopDisplay("success")
+		if confInit {
+			SpinSideNoteDisplay("initialized .git/config file")
+		}
+		if remoteGot {
+			SpinSideNoteDisplay("updated remote branch")
+		}
 	}
 
 	// Current workflow
@@ -196,7 +208,9 @@ func RepoConfigDefineWorkflow(rootCfg c.Config, wf c.Workflow) {
 func RepoConfigWrite() {
 	err := repo.SetConfig(repoCfg)
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 }
@@ -210,7 +224,9 @@ func RepoCheckout(branch string, pubKey *ssh.PublicKeys) {
 
 	w, err := repo.Worktree()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 
@@ -236,18 +252,24 @@ func RepoCheckout(branch string, pubKey *ssh.PublicKeys) {
 		mirrorRemoteBranchRefSpec := fmt.Sprintf("refs/heads/%s:refs/heads/%s", branch, branch)
 		err = fetchOrigin(mirrorRemoteBranchRefSpec, pubKey)
 		if err != nil {
-			SpinStopDisplay("fail")
+			if !Quiet {
+				SpinStopDisplay("fail")
+			}
 			log.Fatalln(err)
 		}
 
 		err = w.Checkout(&branchCoOpts)
 		if err != nil {
-			SpinStopDisplay("fail")
+			if !Quiet {
+				SpinStopDisplay("fail")
+			}
 			log.Fatalln(err)
 		}
 	}
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 }
@@ -256,7 +278,9 @@ func RepoPull(pubKey *ssh.PublicKeys) string {
 	// Get the working directory for the repository
 	w, err := repo.Worktree()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 
@@ -280,12 +304,16 @@ func RepoPull(pubKey *ssh.PublicKeys) string {
 	// Print the latest commit that was just pulled
 	ref, err := repo.Head()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 	commit, err := repo.CommitObject(ref.Hash())
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 
@@ -301,7 +329,9 @@ func RepoDeleteBranch(branch string, ref plumbing.ReferenceName) {
 	// Ensure branch exists
 	_, err := repo.Branch(branch)
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln("Branch " + branch + " does not exists")
 	}
 
@@ -310,7 +340,9 @@ func RepoDeleteBranch(branch string, ref plumbing.ReferenceName) {
 	repo.DeleteBranch(branch)
 	err = repo.Storer.RemoveReference(ref)
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 }
@@ -318,7 +350,9 @@ func RepoDeleteBranch(branch string, ref plumbing.ReferenceName) {
 func RepoHead() *plumbing.Reference {
 	h, err := repo.Head()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 
@@ -350,12 +384,16 @@ func RepoConfigRefresh() {
 func RepoStatus() git.Status {
 	w, err := repo.Worktree()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 	s, err := w.Status()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 	return s
@@ -366,7 +404,9 @@ func RepoAddAllFiles() {
 
 	w, err := repo.Worktree()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 
@@ -374,7 +414,9 @@ func RepoAddAllFiles() {
 		All: true,
 	})
 	if erro != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(erro)
 	}
 }
@@ -384,14 +426,18 @@ func RepoCommit(message string) {
 
 	w, err := repo.Worktree()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 	_, err = w.Commit(message, &git.CommitOptions{
 		AllowEmptyCommits: false,
 	})
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 }
@@ -411,7 +457,9 @@ func RepoPush(pubKey *ssh.PublicKeys, branch string) {
 
 	err = repo.Push(opts)
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 }
@@ -535,7 +583,9 @@ func repoGetRemoteDefaultBranch(pubKey *ssh.PublicKeys) (string, error) {
 
 	rem, remErr := repo.Remote(originValue)
 	if remErr != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		return "", remErr
 	}
 
@@ -549,7 +599,9 @@ func repoGetRemoteDefaultBranch(pubKey *ssh.PublicKeys) (string, error) {
 	// We can then use every Remote functions to retrieve wanted information
 	refs, remErr := rem.List(opts)
 	if remErr != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		return "", remErr
 	}
 	for _, r := range refs {
@@ -569,7 +621,9 @@ func repoDefaultBranchExpired() bool {
 		dtConfigParam, _ := repoConfigGetParam(wfsetupSection, defaultBranchExpiryParam)
 		dtConfigStr, dtErr := time.Parse(expiryLayout, dtConfigParam)
 		if dtErr != nil {
-			SpinStopDisplay("fail")
+			if !Quiet {
+				SpinStopDisplay("fail")
+			}
 			log.Fatalln(dtErr.Error())
 		}
 		dtConfig := dtConfigStr.Format(expiryUtcLayout)
@@ -634,7 +688,9 @@ func testRepo(basePath string) {
 	// test viability of the config (.git/config)
 	repoCfg, err = repo.Config()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Warningln("Error in the file " + basePath + "/.git/config:" + err.Error())
 		log.Warningln("Attempt a .git/config upgrade from v2 to v3 ?")
 		up := UpgradeV2ToV3()
@@ -668,7 +724,9 @@ func openRepo() {
 		EnableDotGitCommonDir: true,
 	})
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 }
@@ -685,7 +743,9 @@ func repoBasePath() string {
 func fetchOrigin(refSpecStr string, pubKey *ssh.PublicKeys) error {
 	remote, err := repo.Remote(originValue)
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 
@@ -716,7 +776,9 @@ func branchExists(branch string) bool {
 
 	branches, err := repo.Branches()
 	if err != nil {
-		SpinStopDisplay("fail")
+		if !Quiet {
+			SpinStopDisplay("fail")
+		}
 		log.Fatalln(err)
 	}
 	branchExists := false
