@@ -1,0 +1,26 @@
+[global]
+app_name = WorkFlow
+script_name = work-facilitator
+version = 3.3.4
+enforce_standard = {{ work_facilitator.enforce_standard }}
+log_level = {{ work_facilitator.log_level }}
+default_branch = {{ work_facilitator.default_branch }}
+ssh_key_id = {{ work_facilitator.ssh_key_id }}
+
+commit_expr = {{ work_facilitator.commit_expr | quote }}
+commit_content = {{ work_facilitator.commit_content | quote }}
+branch_expr = {{ work_facilitator.branch_expr | quote }}
+branch_content = {{ work_facilitator.branch_content | quote }}
+type_mapping = {{ work_facilitator.type_mapping | quote }}
+jira_ticket_expr = {{ work_facilitator.jira_ticket_expr | quote }}
+
+[ticketing.jira]
+enabled = {{ work_facilitator.ticketing.jira.enabled }}
+server = {{ work_facilitator.ticketing.jira.server }}
+username = {{ work_facilitator.ticketing.jira.username }}
+password = {{ work_facilitator.ticketing.jira.password }}
+
+[ticketing.gitlab]
+enabled = {{ work_facilitator.ticketing.gitlab.enabled }}
+server = {{ work_facilitator.ticketing.gitlab.server }}
+token = {{ work_facilitator.ticketing.gitlab.token }}
