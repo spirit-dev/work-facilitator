@@ -2,10 +2,10 @@ global:
   app_name: "WorkFlow"
   script_name: "work-facilitator"
   version: "3.3.6-dev"
-  enforce_standard: {{ facilitators.work.enforce_standard }}
-  log_level: {{ facilitators.work.log_level }}
-  default_branch: {{ facilitators.work.default_branch }}
-  ssh_key_id: {{ facilitators.work.ssh_key_id }}
+  enforce_standard: {{ facilitators.work.enforce_standard | quote }}
+  log_level: {{ facilitators.work.log_level | quote }}
+  default_branch: {{ facilitators.work.default_branch | quote }}
+  ssh_key_id: {{ facilitators.work.ssh_key_id | quote }}
 
   commit_expr: {{ facilitators.work.commit_expr | quote }}
   commit_content: {{ facilitators.work.commit_content | quote }}
@@ -16,11 +16,11 @@ global:
 
 ticketing:
   jira:
-    enabled: {{ facilitators.work.ticketing.jira.enabled }}
-    server: {{ facilitators.work.ticketing.jira.server }}
-    username: {{ facilitators.work.ticketing.jira.username }}
+    enabled: {{ facilitators.work.ticketing.jira.enabled | quote }}
+    server: {{ facilitators.work.ticketing.jira.server | quote }}
+    username: {{ facilitators.work.ticketing.jira.username | quote }}
     password: {{ facilitators.work.ticketing.jira.password | quote }}
   gitlab:
-    enabled: {{ facilitators.work.ticketing.gitlab.enabled }}
-    server: {{ facilitators.work.ticketing.gitlab.server }}
-    token: {{ facilitators.work.ticketing.gitlab.token }}
+    enabled: {{ facilitators.work.ticketing.gitlab.enabled | quote }}
+    server: {{ facilitators.work.ticketing.gitlab.server | quote }}
+    token: {{ facilitators.work.ticketing.gitlab.token | quote }}
