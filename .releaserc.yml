@@ -1,0 +1,36 @@
+plugins:
+  - "@semantic-release/commit-analyzer"
+  - "@semantic-release/release-notes-generator"
+  - "@semantic-release/gitlab"
+  - - "@google/semantic-release-replace-plugin"
+    - replacements:
+        - files:
+            - config/.workflow.ini
+          from: "version = .*"
+          to: "version = ${nextRelease.version}-dev"
+          results:
+            - file: config/.workflow.ini
+              hasChanged: true
+              numMatches: 1
+              numReplacements: 1
+          countMatches: true
+        - files:
+            - config/.workflow.ini.j2
+          from: "version = .*"
+          to: "version = ${nextRelease.version}"
+          results:
+            - file: config/.workflow.ini.j2
+              hasChanged: true
+              numMatches: 1
+              numReplacements: 1
+          countMatches: true
+  - - "@semantic-release/git"
+    - assets:
+        - config/.workflow.*
+      # To avoid having the CI skipped while updating tag, we override the default message.
+      # message: "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      message: "chore(release): ${nextRelease.version} \n\n${nextRelease.notes}"
+branches:
+  - main
+tagFormat:
+  - "${version}"
