@@ -18,7 +18,7 @@ jira_ticket_expr = {{ facilitators.work.jira_ticket_expr | quote }}
 enabled = {{ facilitators.work.ticketing.jira.enabled }}
 server = {{ facilitators.work.ticketing.jira.server }}
 username = {{ facilitators.work.ticketing.jira.username }}
-password = {{ facilitators.work.ticketing.jira.password }}
+password = {{ facilitators.work.ticketing.jira.password | quote }}
 
 [ticketing.gitlab]
 enabled = {{ facilitators.work.ticketing.gitlab.enabled }}
