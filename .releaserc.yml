@@ -5,21 +5,21 @@ plugins:
   - - "@google/semantic-release-replace-plugin"
     - replacements:
         - files:
-            - config/.workflow.ini
+            - config/.workflow.yaml
           from: "version = .*"
           to: "version = ${nextRelease.version}-dev"
           results:
-            - file: config/.workflow.ini
+            - file: config/.workflow.yaml
               hasChanged: true
               numMatches: 1
               numReplacements: 1
           countMatches: true
         - files:
-            - config/.workflow.ini.j2
+            - config/.workflow.yaml.j2
           from: "version = .*"
           to: "version = ${nextRelease.version}"
           results:
-            - file: config/.workflow.ini.j2
+            - file: config/.workflow.yaml.j2
               hasChanged: true
               numMatches: 1
               numReplacements: 1
