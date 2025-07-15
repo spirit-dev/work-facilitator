@@ -1,7 +1,5 @@
 # work-facilitator
 
-> Script under development
->
 > Take care of it
 >
 > I love this tool
