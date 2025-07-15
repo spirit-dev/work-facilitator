@@ -6,8 +6,8 @@ plugins:
     - replacements:
         - files:
             - config/.workflow.yaml
-          from: "version = .*"
-          to: "version = ${nextRelease.version}-dev"
+          from: "version: .*"
+          to: "version: ${nextRelease.version}-dev"
           results:
             - file: config/.workflow.yaml
               hasChanged: true
@@ -16,8 +16,8 @@ plugins:
           countMatches: true
         - files:
             - config/.workflow.yaml.j2
-          from: "version = .*"
-          to: "version = ${nextRelease.version}"
+          from: "version: .*"
+          to: "version: ${nextRelease.version}"
           results:
             - file: config/.workflow.yaml.j2
               hasChanged: true
