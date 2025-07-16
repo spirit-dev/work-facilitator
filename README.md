@@ -56,7 +56,7 @@ Open a paused work
 
 ### initLazy
 
-Create work based on JIRA or Gitlab informations
+Create work based on JIRA/Gitlab informations
 
 ### completion
 
