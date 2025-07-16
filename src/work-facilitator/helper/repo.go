@@ -108,6 +108,9 @@ func NewRepo(wfConfig c.Config) c.Repo {
 	log.Debugf("gitRepoName: %v\n", gitRepoName)
 	gitRepoFName := strings.Join([]string{gitRepoNs, gitRepoName}, "/")
 	gitRepoHost, _, _ := net.SplitHostPort(repoParsedUrl.Host)
+	if gitRepoHost == "" {
+		gitRepoHost = repoParsedUrl.Host
+	}
 	log.Debugf("gitRepoHost: %v\n", gitRepoHost)
 
 	// Build browser url based on origin url
