@@ -81,14 +81,19 @@ func initLazyPreRunCommand(cmd *cobra.Command, args []string) {
 		issue := ticketing.GetJiraIssue(issueInitLArg)
 		// Build summary
 		summaryInitL = helper.CleanString(issue.Fields.Summary)
-		// fmt.Printf("%s: %+v\n", res.Key, res.Fields.Summary)
-		// fmt.Printf("Type: %s\n", res.Fields.Type.Name)
-		// fmt.Printf("Priority: %s\n", res.Fields.Priority.Name)
 		log.Debugf("summaryInitL: %v\n", summaryInitL)
 
-		currentWorkInitL = fmt.Sprintf("%s/%s_%s", branchTypeInitLArg, issueInitLArg, summaryInitL)
-		// Define commit pre message
-		commitInitL = fmt.Sprintf("%s(%s): ", commitTypeInitLArg, issueInitLArg)
+		// Define branch template
+		currentWorkInitL = helper.Template(RootConfig.BranchTemplate, map[string]interface{}{
+			"type":    branchTypeInitLArg,
+			"issue":   issueInitLArg,
+			"summary": summaryInitL,
+		})
+		// Define commit template
+		commitInitL = helper.Template(RootConfig.CommitTemplate, map[string]interface{}{
+			"type":  commitTypeInitLArg,
+			"issue": issueInitLArg,
+		})
 	}
 
 	if RootConfig.Ticketing == c.GITLAB {

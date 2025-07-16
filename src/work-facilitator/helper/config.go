@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/valyala/fasttemplate"
 )
 
 func NewConfig() c.Config {
@@ -67,9 +69,11 @@ func NewConfig() c.Config {
 		BranchContent:         branchContentSplit,
 		BranchContentStr:      "[" + branchContentJoin + "]",
 		BranchExpr:            viper.GetString("global.branch_expr"),
+		BranchTemplate:        viper.GetString("global.branch_template"),
 		CommitType:            commitTypeSplit,
 		CommitTypeStr:         "[" + commitTypeJoin + "]",
 		CommitExpr:            viper.GetString("global.commit_expr"),
+		CommitTemplate:        viper.GetString("global.commit_template"),
 		TypeMapping:           typeMapping,
 		Ticketing:             ticketing,
 		TicketingJiraEnabled:  ticketingJiraEnabled,
@@ -156,7 +160,7 @@ func BuildBranchTypeConfig() []string {
 func CurrentPath() string {
 	path, _ := os.Getwd()
 	// path = path + "/../../repo_test" // TODO comment this out
-	// path = "/Users/bordaje1/Documents/Projects/devops-shared-platform/armature/mobile/mobile-armature-definition"
+	// path = "/home/jbordat/Documents/projects/cig/platform/products/corporate"
 	log.Debugln("Current path: " + path)
 
 	return path
@@ -224,4 +228,12 @@ Please review:
 		}
 	}
 	return ok
+}
+
+func Template(template string, m map[string]interface{}) string {
+
+	t := fasttemplate.New(template, "{{", "}}")
+	s := t.ExecuteString(m)
+
+	return s
 }

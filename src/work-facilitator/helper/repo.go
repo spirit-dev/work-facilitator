@@ -3,6 +3,7 @@ package helper
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	c "spirit-dev/work-facilitator/work-facilitator/common"
 	"strconv"
@@ -99,13 +100,18 @@ func NewRepo(wfConfig c.Config) c.Repo {
 
 	// Extract git repo name
 	gitRepoNs := strings.Join(remove(nameS, len(nameS)-1), "/")
-	log.Debugln("Repo NS: " + gitRepoNs)
+	if gitRepoNs[0:1] == "/" {
+		gitRepoNs = gitRepoNs[1:]
+	}
+	log.Debugln("gitRepoNs: " + gitRepoNs)
 	gitRepoName := strings.Replace(nameS[len(nameS)-1], ".git", "", -1)
 	log.Debugf("gitRepoName: %v\n", gitRepoName)
 	gitRepoFName := strings.Join([]string{gitRepoNs, gitRepoName}, "/")
+	gitRepoHost, _, _ := net.SplitHostPort(repoParsedUrl.Host)
+	log.Debugf("gitRepoHost: %v\n", gitRepoHost)
 
 	// Build browser url based on origin url
-	browserUrl := "https://" + repoParsedUrl.Host + "/" + gitRepoNs + "/" + gitRepoName
+	browserUrl := "https://" + gitRepoHost + "/" + gitRepoNs + "/" + gitRepoName
 	log.Debugln("Browser url: " + browserUrl)
 
 	// Repo default branch
