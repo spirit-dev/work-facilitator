@@ -85,8 +85,17 @@ func initPreRunCommand(cmd *cobra.Command, args []string) {
 		commitInit = fmt.Sprintf("%s(!%d): ", commitTypeInitArg, issueInitArg)
 	}
 	if RootConfig.Ticketing == c.JIRA {
-		currentWorkInit = fmt.Sprintf("%s/%s_%s", branchTypeInitArg, ticketInitArg, titleInitArg)
-		commitInit = fmt.Sprintf("%s(%s): ", commitTypeInitArg, ticketInitArg)
+		// Define branch template
+		currentWorkInit = helper.Template(RootConfig.BranchTemplate, map[string]interface{}{
+			"type":    branchTypeInitArg,
+			"issue":   ticketInitArg,
+			"summary": titleInitArg,
+		})
+		// Define commit template
+		commitInit = helper.Template(RootConfig.CommitTemplate, map[string]interface{}{
+			"type":  commitTypeInitArg,
+			"issue": ticketInitArg,
+		})
 	}
 
 	// Ensure standard is correct (if enforced)

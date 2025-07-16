@@ -13,9 +13,11 @@ type Config struct {
 	BranchContent    []string
 	BranchContentStr string
 	BranchExpr       string
+	BranchTemplate   string
 	CommitType       []string
 	CommitTypeStr    string
 	CommitExpr       string
+	CommitTemplate   string
 	TypeMapping      string
 
 	Ticketing string
