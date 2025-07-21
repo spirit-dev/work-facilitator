@@ -13,7 +13,7 @@
       "env": {
         // SOME: "thing
       },
-      "args": ["open"],
+      "args": ["init", "PLT-0", "test8&*weqwe()", "hotfix"],
       "showLog": false
     }
   ]
