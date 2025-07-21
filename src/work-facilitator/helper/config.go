@@ -178,11 +178,14 @@ func CleanString(text string) string {
 	// Typically will transform
 	// from		test8&*weqwe()
 	// to		test8__weqwe__
-	re := regexp.MustCompile(`\W`)
-	cleaned := strings.Join(re.Split(text, -1), "_")
-	log.Debugln("Cleaned title from: " + text + " -- to : " + cleaned)
+	// finally	test8_weqwe_
+	re1 := regexp.MustCompile(`\W`)
+	clean1 := strings.Join(re1.Split(text, -1), "_")
+	re2 := regexp.MustCompile("_+")
+	clean2 := strings.Join(re2.Split(clean1, -1), "_")
+	log.Debugln("Cleaned title from: " + text + " -- to : " + clean2)
 
-	return cleaned
+	return clean2
 }
 
 func DefineCommit(branchType string, typeMapping string) string {
