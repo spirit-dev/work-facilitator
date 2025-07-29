@@ -15,6 +15,16 @@ plugins:
               numReplacements: 1
           countMatches: true
         - files:
+            - config/.workflow.dev.yaml
+          from: "version: .*"
+          to: "version: ${nextRelease.version}-dev"
+          results:
+            - file: config/.workflow.dev.yaml
+              hasChanged: true
+              numMatches: 1
+              numReplacements: 1
+          countMatches: true
+        - files:
             - config/.workflow.yaml.j2
           from: "version: .*"
           to: "version: ${nextRelease.version}"
