@@ -1,0 +1,41 @@
+global:
+  app_name: "WorkFlow"
+  script_name: "work-facilitator"
+  version: 3.4.2-dev
+  enforce_standard: "True"
+  log_level: "info" # trace,info,debug,warn,error,fatal,panic
+  default_branch: "main"
+  ssh_key_id: ""
+
+  # GitLab
+  commit_expr: '((^(feat|fix|docs|style|refactor|test|build|chore|perf)(\(.+\))?: (.{2,}))|^(Notes added by "git notes add"))|(Merge (.*\s*)*)|(Initial commit$)'
+  commit_content: "feat|fix|docs|style|refactor|test|build|chore|perf"
+  commit_template: "{{type}}: {{issue}} "
+
+  branch_expr: '(feat|fix|release|renovate)\/*'
+  branch_content: "feat|fix|release|renovate"
+  branch_template: "{{type}}/{{issue}}_{{summary}}"
+
+  type_mapping: '{"feat": "feat", "fix": "fix", "release": "build", "renovate": "refactor"}'
+  jira_ticket_expr: '[A-Z]{2,}-\d+'
+
+  # JIRA
+  # commit_expr: '((^(feat|fix|docs|style|refactor|test|build|chore|perf)(\(.+\))?: (.{2,}))|^(Notes added by "git notes add"))|(Merge (.*\s*)*)|(Initial commit$)'
+  # commit_content: 'feat|fix|docs|style|refactor|test|build|chore|perf'
+  # commit_template: "{{type}}: {{issue}} "
+  # branch_expr: '(feature|hotfix|bugfix|release|renovate)\/*'
+  # branch_content: 'feature|hotfix|bugfix|release|renovate'
+  # branch_template: "{{type}}/{{issue}}_{{summary}}"
+  # type_mapping: '{"feature": "feat", "hotfix": "fix", "bugfix": "fix", "release": "build", "renovate": "refactor"}'
+  # jira_ticket_expr: '[A-Z]{2,}-\d+'
+
+ticketing:
+  jira:
+    enabled: False
+    server: http://jira.not.yeah
+    username: user
+    password: pass # pragma: allowlist secret
+  gitlab:
+    enabled: True
+    server: https://gitlab.some.thing
+    token: glpat-something # pragma: allowlist secret

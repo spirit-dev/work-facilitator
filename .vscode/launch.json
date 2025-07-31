@@ -1,7 +1,4 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
@@ -10,10 +7,13 @@
       "request": "launch",
       "program": "${workspaceFolder}/src/work-facilitator",
       "console": "integratedTerminal",
-      "env": {
-        // SOME: "thing
-      },
-      "args": ["init", "PLT-0", "test8&*weqwe()", "hotfix"],
+      "env": {},
+      "args": [
+        "init",
+        "PLT-0",
+        "test8&*weqwe()",
+        "hotfix"
+      ],
       "showLog": false
     }
   ]
