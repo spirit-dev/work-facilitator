@@ -41,6 +41,7 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
+          working-directory: src
 
       - name: <b>Run Tests</b>
         run: go test -v ./... -coverprofile=coverage.out
