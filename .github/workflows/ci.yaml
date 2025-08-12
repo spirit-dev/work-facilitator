@@ -101,7 +101,8 @@ jobs:
         run: |
           npm install -g semantic-release \
           @semantic-release/changelog \
-          @semantic-release/git
+          @semantic-release/git \
+          @google/semantic-release-replace-plugin
 
       - name: <b>Run Semantic Release</b>
         env:
