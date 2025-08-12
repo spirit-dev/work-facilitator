@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./src
+        working-directory: src
     steps:
       - name: <b>Checkout Code</b>
         uses: actions/checkout@v4
@@ -41,7 +41,6 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
-        # run: golangci-lint run --out-format=colored-line-number
 
       - name: <b>Run Tests</b>
         run: go test -v ./... -coverprofile=coverage.out
