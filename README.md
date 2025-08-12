@@ -4,8 +4,7 @@
 >
 > I love this tool
 
-[![GitLab Sync](https://img.shields.io/badge/gitlab_sync-work_facilitator-blue?style=for-the-badge&logo=gitlab)](https://gitlab-internal.spirit-dev.net/github-mirror/scripts-work-facilitator) <!-- markdownlint-disable MD041 -->
-[![GitHub Mirror](https://img.shields.io/badge/github_mirror-work_facilitator-blue?style=for-the-badge&logo=github)](https://github.com/spirit-dev/work-facilitator)
+
 
 <!--TOC-->
 
@@ -79,4 +78,4 @@ Create work based on JIRA or Gitlab informations
 
 ### completion
 
-Generate completion for Linux / Mac systems
+Generate completion for Linux / Mac system
