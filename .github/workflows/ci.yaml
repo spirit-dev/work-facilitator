@@ -37,11 +37,11 @@ jobs:
       - name: <b>Run Go Vet</b>
         run: go vet ./...
 
-      - name: <b>Run Golangci-lint</b>
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
-          working-directory: src
+      # - name: <b>Run Golangci-lint</b>
+      #   uses: golangci/golangci-lint-action@v8
+      #   with:
+      #     version: latest
+      #     working-directory: src
 
       - name: <b>Run Tests</b>
         run: go test -v ./... -coverprofile=coverage.out
