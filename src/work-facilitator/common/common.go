@@ -14,6 +14,7 @@ type Config struct {
 	BranchContentStr string
 	BranchExpr       string
 	BranchTemplate   string
+	BranchSeparator  string
 	CommitType       []string
 	CommitTypeStr    string
 	CommitExpr       string
@@ -60,6 +61,7 @@ type Repo struct {
 	HasCurrentWorkflow  bool
 	CurrentWorkflowData Workflow
 	PublicAuthKey       *ssh.PublicKeys
+	Separator           string
 }
 
 type JiraConfig struct {

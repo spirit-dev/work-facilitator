@@ -35,6 +35,7 @@ const (
 
 	defaultBranchParam       = "default-branch"
 	defaultBranchExpiryParam = "default-branch-expiry"
+	separatorParam           = "separator"
 	currentParam             = "current"
 	typeBranchParam          = "type-branch"
 	typeCommitParam          = "type-commit"
@@ -120,6 +121,12 @@ func NewRepo(wfConfig c.Config) c.Repo {
 	// Repo default branch
 	defaultBranch, confInit, remoteGot := repoDefautltBranch(wfConfig.DefaultBranch, publicAuthKey)
 
+	// Repo defined separator
+	separator, err := repoConfigGetParam(wfsetupSection, separatorParam)
+	if err != nil {
+		separator = c.NOTGIVEN
+	}
+
 	// Generate work list
 	worklist := repoConfigGenerateWorklist()
 
@@ -160,6 +167,7 @@ func NewRepo(wfConfig c.Config) c.Repo {
 		HasCurrentWorkflow:  hasCurrentWf,
 		CurrentWorkflowData: currentWfData,
 		PublicAuthKey:       publicAuthKey,
+		Separator:           separator,
 	}
 
 	return repoInfo
