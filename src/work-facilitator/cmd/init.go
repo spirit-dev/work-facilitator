@@ -17,12 +17,13 @@ import (
 
 var (
 	// Cmd args
-	titleInitArg      string
-	branchTypeInitArg string
-	commitTypeInitArg string
-	refBranchInitArg  string
-	issueInitArg      int
-	ticketInitArg     string
+	titleInitArg          string
+	branchTypeInitArg     string
+	commitTypeInitArg     string
+	refBranchInitArg      string
+	issueInitArg          int
+	ticketInitArg         string
+	titleSeparatorInitArg string
 
 	// local variables
 	currentWorkInit string
@@ -67,13 +68,20 @@ func initPreRunCommand(cmd *cobra.Command, args []string) {
 	titleInitArg = args[1]
 	branchTypeInitArg = args[2]
 
-	// Set default ref branch
-	if refBranchInitArg == c.NOTGIVENBRANCH {
-		refBranchInitArg = RootRepo.DefaultBranch
+	// Define separator
+	// Precedence:
+	// 		1. cli
+	//		2. repo
+	// 		3. config
+	if titleSeparatorInitArg == c.NOTGIVEN && RootRepo.Separator == c.NOTGIVEN {
+		titleSeparatorInitArg = RootConfig.BranchSeparator
+	}
+	if titleSeparatorInitArg == c.NOTGIVEN && RootRepo.Separator != c.NOTGIVEN {
+		titleSeparatorInitArg = RootRepo.Separator
 	}
 
 	// Clean title (remove any non word character)
-	titleInitArg = helper.CleanString(titleInitArg)
+	titleInitArg = helper.CleanString(titleInitArg, titleSeparatorInitArg)
 
 	// Override commit type if not given
 	if commitTypeInitArg == c.NOTGIVEN {
@@ -160,6 +168,7 @@ func init() {
 
 	initCmd.Flags().StringVarP(&commitTypeInitArg, "commit-type", "c", c.NOTGIVEN, "Specify the commit type to be treated "+RootConfig.CommitTypeStr)
 	initCmd.Flags().StringVarP(&refBranchInitArg, "ref-branch", "r", c.NOTGIVENBRANCH, "Specify the source branch")
+	initCmd.Flags().StringVarP(&titleSeparatorInitArg, "separator", "s", c.NOTGIVEN, "Specify the separator in the branch title")
 
 	initCmd.MarkFlagRequired("title")
 	initCmd.MarkFlagRequired("branch-type")

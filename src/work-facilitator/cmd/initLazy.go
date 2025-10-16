@@ -17,11 +17,12 @@ import (
 
 var (
 	// Cmd args
-	issueInitLArg      string // args[0]
-	issueInitLArgI     int    // args[0]
-	branchTypeInitLArg string // args[1]
-	commitTypeInitLArg string
-	refBranchInitLArg  string
+	issueInitLArg          string
+	issueInitLArgI         int
+	branchTypeInitLArg     string
+	commitTypeInitLArg     string
+	refBranchInitLArg      string
+	titleSeparatorInitLArg string
 
 	// local variables
 	currentWorkInitL string
@@ -70,6 +71,18 @@ func initLazyPreRunCommand(cmd *cobra.Command, args []string) {
 		commitTypeInitLArg = helper.DefineCommit(branchTypeInitLArg, RootConfig.TypeMapping)
 	}
 
+	// Define separator
+	// Precedence:
+	// 		1. cli
+	//		2. repo
+	// 		3. config
+	if titleSeparatorInitLArg == c.NOTGIVEN && RootRepo.Separator == c.NOTGIVEN {
+		titleSeparatorInitLArg = RootConfig.BranchSeparator
+	}
+	if titleSeparatorInitLArg == c.NOTGIVEN && RootRepo.Separator != c.NOTGIVEN {
+		titleSeparatorInitLArg = RootRepo.Separator
+	}
+
 	if RootConfig.Ticketing == c.JIRA {
 		// Prepare Jira
 		ticketing.ClientJira(c.JiraConfig{
@@ -80,7 +93,7 @@ func initLazyPreRunCommand(cmd *cobra.Command, args []string) {
 		// get Jira issue
 		issue := ticketing.GetJiraIssue(issueInitLArg)
 		// Build summary
-		summaryInitL = helper.CleanString(issue.Fields.Summary)
+		summaryInitL = helper.CleanString(issue.Fields.Summary, titleSeparatorInitLArg)
 		log.Debugf("summaryInitL: %v\n", summaryInitL)
 
 		// Define branch template
@@ -105,7 +118,7 @@ func initLazyPreRunCommand(cmd *cobra.Command, args []string) {
 		})
 		// Get Gitlab issue
 		issue := ticketing.GetGlabIssue(issueInitLArgI, RootRepo.FName)
-		summaryInitL = helper.CleanString(helper.CleanGlabString(issue.Title))
+		summaryInitL = helper.CleanString(helper.CleanGlabString(issue.Title), titleSeparatorInitLArg)
 		log.Debugf("issue.Title: `%v` --> `%v`\n", issue.Title, summaryInitL)
 
 		currentWorkInitL = issue.SourceBranch
@@ -188,6 +201,7 @@ func init() {
 
 	initLazyCmd.Flags().StringVarP(&commitTypeInitLArg, "commit-type", "c", c.NOTGIVEN, "Specify the commit type to be treated "+RootConfig.CommitTypeStr)
 	initLazyCmd.Flags().StringVarP(&refBranchInitLArg, "ref-branch", "r", c.NOTGIVENBRANCH, "Specify the source branch")
+	initLazyCmd.Flags().StringVarP(&titleSeparatorInitLArg, "separator", "s", c.NOTGIVEN, "Specify the separator in the branch title")
 
 	initLazyCmd.MarkFlagRequired("branch-type")
 

@@ -70,6 +70,7 @@ func NewConfig() c.Config {
 		BranchContentStr:      "[" + branchContentJoin + "]",
 		BranchExpr:            viper.GetString("global.branch_expr"),
 		BranchTemplate:        viper.GetString("global.branch_template"),
+		BranchSeparator:       viper.GetString("global.branch_separator"),
 		CommitType:            commitTypeSplit,
 		CommitTypeStr:         "[" + commitTypeJoin + "]",
 		CommitExpr:            viper.GetString("global.commit_expr"),
@@ -125,11 +126,11 @@ func initConfig() {
 	viper.SetConfigType("yaml")      // REQUIRED if the config file does not have the extension in the name
 	// Search config in home directory with name ".cobra" (without extension).
 	viper.AddConfigPath(homeDir()) // TODO re-enable the home dir as a first place to look at
-	// viper.AddConfigPath("/home/jbordat/Documents/Projects/scripts/work-facilitator/config")   // path to look for the config file in
-	// viper.AddConfigPath("/home/jbordat/Documents/projects/scripts/work-facilitator/config")   // path to look for the config file in
+	// viper.AddConfigPath("/home/jbordat/Documents/Projects/scripts/work-facilitator/config") // path to look for the config file in
+	// viper.AddConfigPath("/home/jbordat/Documents/projects/scripts/work-facilitator/config") // path to look for the config file in
 	// viper.AddConfigPath("/Users/bordaje1/Documents/Projects/scripts/work-facilitator/config") // path to look for the config file in
-	viper.AddConfigPath("/home/jbordat/Documents/tmp/work-facilitator/config")
-	viper.AddConfigPath("/code/config") // call multiple times to add many search paths
+	// viper.AddConfigPath("/home/jbordat/Documents/tmp/work-facilitator/config")
+	// viper.AddConfigPath("/code/config") // call multiple times to add many search paths
 
 	err1 := viper.ReadInConfig() // Find and read the config file
 	if err1 != nil {             // Handle errors reading the config file
@@ -160,7 +161,6 @@ func BuildBranchTypeConfig() []string {
 func CurrentPath() string {
 	path, _ := os.Getwd()
 	// path = path + "/../../repo_test" // TODO comment this out
-	// path = "/home/jbordat/Documents/projects/cig/platform/products/corporate"
 	log.Debugln("Current path: " + path)
 
 	return path
@@ -172,20 +172,31 @@ func CleanGlabString(txt string) string {
 	return t2
 }
 
-func CleanString(text string) string {
+func CleanString(input, separator string) string {
+	var result strings.Builder
+	lastWasSeparator := false
 
-	// Cleanup any non word character
-	// Typically will transform
-	// from		test8&*weqwe()
-	// to		test8__weqwe__
-	// finally	test8_weqwe_
-	re1 := regexp.MustCompile(`\W`)
-	clean1 := strings.Join(re1.Split(text, -1), "_")
-	re2 := regexp.MustCompile("_+")
-	clean2 := strings.Join(re2.Split(clean1, -1), "_")
-	log.Debugln("Cleaned title from: " + text + " -- to : " + clean2)
+	for _, char := range input {
+		if (char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') {
+			result.WriteRune(char)
+			lastWasSeparator = false
+		} else if !lastWasSeparator && result.Len() > 0 {
+			// Add separator only if previous char wasn't a separator
+			// and we're not at the start
+			result.WriteString(separator)
+			lastWasSeparator = true
+		}
+	}
 
-	return clean2
+	// Remove trailing separator if present
+	resultStr := result.String()
+	if len(resultStr) > 0 && len(separator) > 0 && strings.HasSuffix(resultStr, separator) {
+		resultStr = resultStr[:len(resultStr)-len(separator)]
+	}
+
+	return resultStr
 }
 
 func DefineCommit(branchType string, typeMapping string) string {
