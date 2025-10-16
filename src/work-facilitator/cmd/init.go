@@ -68,6 +68,11 @@ func initPreRunCommand(cmd *cobra.Command, args []string) {
 	titleInitArg = args[1]
 	branchTypeInitArg = args[2]
 
+	// Set default ref branch
+	if refBranchInitArg == c.NOTGIVENBRANCH {
+		refBranchInitArg = RootRepo.DefaultBranch
+	}
+
 	// Define separator
 	// Precedence:
 	// 		1. cli
