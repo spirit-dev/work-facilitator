@@ -1,93 +1,269 @@
 # work-facilitator
 
+> Take care of it
+>
+> I love this tool
 
+[![GitLab Sync](https://img.shields.io/badge/gitlab_sync-work_facilitator-blue?style=for-the-badge&logo=gitlab)](https://gitlab-internal.spirit-dev.net/github-mirror/scripts-work-facilitator) <!-- markdownlint-disable MD041 -->
+[![GitHub Mirror](https://img.shields.io/badge/github_mirror-work_facilitator-blue?style=for-the-badge&logo=github)](https://github.com/spirit-dev/work-facilitator)
 
-## Getting started
+<!--TOC-->
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- [Presentation](#presentation)
+- [Features](#features)
+  - [version](#version)
+  - [init](#init)
+  - [commit](#commit)
+  - [ai-commit](#ai-commit)
+    - [Features (AI)](#features-ai)
+    - [Configuration](#configuration)
+    - [Usage](#usage)
+    - [Workflow](#workflow)
+    - [Environment Variables](#environment-variables)
+    - [Privacy & Security](#privacy--security)
+    - [Flags](#flags)
+  - [end](#end)
+  - [list](#list)
+  - [open](#open)
+  - [pause](#pause)
+  - [status](#status)
+  - [use](#use)
+  - [initLazy](#initlazy)
+  - [completion](#completion)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+<!--TOC-->
 
-## Add your files
+## Presentation
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+This our main script. It will manage our interaction between JIRA - GitHub - Gitlab
 
+It will also enforce some standards when it comes to branch and message conventions
+
+## Features
+
+Bellow some features described
+
+### version
+
+Display the current version of the script
+
+### init
+
+Initialize a work in link with JIRA or GitLab
+
+Also, it takes the standards in consideration
+
+### commit
+
+Commit current changes properly prefixed
+
+### ai-commit
+
+**AI-Assisted Commit Message Generation** - Leverage AI to generate meaningful commit messages based on your staged changes.
+
+The `ai-commit` command analyzes your git diff and uses AI providers (OpenAI, Claude, or Vertex AI) to generate contextual, well-formatted commit messages that follow your project's standards.
+
+#### Features (AI)
+
+- **Multiple AI Providers**: Support for OpenAI (GPT-4), Anthropic Claude, and Google Vertex AI (Gemini)
+- **Interactive Review**: Review, edit, or regenerate AI-generated messages before committing
+- **Standard Compliance**: Automatically follows configured commit message standards
+- **Privacy Controls**: Exclude sensitive files from AI analysis
+- **Fallback Support**: Gracefully falls back to manual entry if AI fails
+
+#### Configuration
+
+Add AI settings to your `~/.workflow.yaml`:
+
+```yaml
+ai:
+  enabled: true
+  provider: "openai"  # Options: openai, claude, vertexai
+  api_key: "$OPENAI_API_KEY"  # Use $ENV_VAR to reference environment variables
+  model: ""  # Leave empty for default (gpt-4 for openai, claude-3-5-sonnet-20241022 for claude, gemini-2.5-flash for vertexai)
+  max_tokens: 1024
+  temperature: 0.7
+  timeout: 30  # seconds
+  exclude_patterns: []  # File patterns to exclude from AI analysis (e.g., ["*.env", "secrets/*"])
+
+  # Vertex AI specific settings (only needed if provider is "vertexai")
+  google_project_id: ""  # Google Cloud project ID
+  google_location: "us-central1"  # Options: us-central1, us-east4, europe-west1, asia-southeast1, global
+  google_service_account_key: ""  # Path to service account key JSON file
 ```
-cd existing_repo
-git remote add origin https://gitlab-internal.spirit-dev.net/scripts/work-facilitator.git
-git branch -M main
-git push -uf origin main
+
+#### Usage
+
+```bash
+# Basic usage - AI generates commit message
+work-facilitator ai-commit
+
+# Stage all files and commit with AI
+work-facilitator ai-commit -a
+
+# Commit without pushing
+work-facilitator ai-commit -n
+
+# Override AI provider
+work-facilitator ai-commit --provider claude
+work-facilitator ai-commit --provider vertexai
+
+# Skip AI and enter message manually
+work-facilitator ai-commit --no-ai
+
+# Preview message without committing
+work-facilitator ai-commit -d
+
+# Force commit outside workflow
+work-facilitator ai-commit -f
 ```
 
-## Integrate with your tools
+#### Workflow
 
-- [ ] [Set up project integrations](https://gitlab-internal.spirit-dev.net/scripts/work-facilitator/-/settings/integrations)
+1. Stage your changes with `git add`
+2. Run `work-facilitator ai-commit`
+3. AI analyzes the diff and generates a commit message
+4. Review the message and choose:
+   - **[A]ccept**: Use the AI-generated message
+   - **[E]dit**: Open in your editor to modify
+   - **[R]egenerate**: Request a new message (future feature)
+   - **[C]ancel**: Abort the commit
+5. Message is validated against commit standards
+6. Changes are committed and pushed (unless `-n` flag used)
 
-## Collaborate with your team
+#### Environment Variables
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Set your API key as an environment variable for security:
 
-## Test and Deploy
+```bash
+# For OpenAI
+export OPENAI_API_KEY="sk-..." # pragma: allowlist secret
 
-Use the built-in continuous integration in GitLab.
+# For Claude
+export ANTHROPIC_API_KEY="sk-ant-..." # pragma: allowlist secret
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+# For Vertex AI (service account key path)
+export GOOGLE_SERVICE_ACCOUNT_KEY="/path/to/service-account-key.json"
+```
 
-***
+Then reference it in config:
 
-# Editing this README
+```yaml
+ai:
+  api_key: "$OPENAI_API_KEY"  # or "$ANTHROPIC_API_KEY"
+  # For Vertex AI:
+  google_service_account_key: "$GOOGLE_SERVICE_ACCOUNT_KEY"
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+**Vertex AI Setup:**
 
-## Suggestions for a good README
+For Vertex AI, you need a Google Cloud service account key:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+1. Create a service account in Google Cloud Console
+2. Grant it the "Vertex AI User" role
+3. Download the JSON key file
+4. Set the path in your config or environment variable
 
-## Name
-Choose a self-explaining name for your project.
+Example Vertex AI configuration:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```yaml
+ai:
+  enabled: true
+  provider: "vertexai"
+  google_project_id: "my-gcp-project"
+  google_location: "us-central1"
+  google_service_account_key: "/home/user/.config/gcp/service-account-key.json"
+  model: "gemini-2.5-flash"
+  max_tokens: 1024
+  temperature: 0.7
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+#### Privacy & Security
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- **Data Sharing**: Git diffs are sent to external AI providers
+- **Sensitive Files**: Use `exclude_patterns` to prevent sensitive files from being analyzed
+- **API Keys**: Store in environment variables, never commit to repository
+- **Local Processing**: All git operations remain local; only diffs are sent to AI
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+#### Flags
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+- `-a, --all-files`: Stage all modified files before commit
+- `-n, --no-push`: Commit without pushing to remote
+- `-f, --force-commit`: Force commit even if not in a workflow
+- `-p, --provider <name>`: Override AI provider (openai, claude)
+- `--no-ai`: Skip AI generation and enter message manually
+- `-d, --dry-run`: Preview commit message without committing
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### end
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Close a work
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+**Uncommitted Files Detection**: The `end` command can detect uncommitted or unstaged files before closing a workflow. The detection respects `.gitignore` patterns (both repository-level and global). Configure behavior in `~/.workflow.yaml`:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```yaml
+global:
+  uncommitted_files_detection: fatal  # Options: disabled, warning, fatal, interactive
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+- `disabled`: Skip the check
+- `warning`: Show warning but continue
+- `fatal`: Abort if uncommitted files found (default)
+- `interactive`: Prompt for confirmation
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+**Force Flag**: Use `-f` or `--force` to skip the uncommitted files check:
 
-## License
-For open source projects, say how it is licensed.
+```bash
+work-facilitator end -f
+work-facilitator end --force -w my-branch
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**Note**: Files matching `.gitignore` patterns are automatically excluded from detection.
+
+### list
+
+List created works
+
+### open
+
+Open browser directly to the repository
+
+### pause
+
+Pause current work
+
+**Uncommitted Files Detection**: The `pause` command can detect uncommitted or unstaged files before pausing a workflow. The detection respects `.gitignore` patterns (both repository-level and global). Configure behavior in `~/.workflow.yaml`:
+
+```yaml
+global:
+  uncommitted_files_detection: fatal  # Options: disabled, warning, fatal, interactive
+```
+
+- `disabled`: Skip the check
+- `warning`: Show warning but continue
+- `fatal`: Abort if uncommitted files found (default)
+- `interactive`: Prompt for confirmation
+
+**Force Flag**: Use `-f` or `--force` to skip the uncommitted files check:
+
+```bash
+work-facilitator pause -f
+work-facilitator pause --force -m
+```
+
+**Note**: Files matching `.gitignore` patterns are automatically excluded from detection.
+
+### status
+
+Status of the current work
+
+### use
+
+Open a paused work
+
+### initLazy
+
+Create work based on JIRA or Gitlab informations
+
+### completion
+
+Generate completion for Linux / Mac systems
