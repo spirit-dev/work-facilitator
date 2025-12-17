@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "work-facilitator",
+      "type": "go",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/work-facilitator",
+      "console": "integratedTerminal",
+      "env": {},
+      "args": [
+        "init",
+        "PLT-0",
+        "test8&*weqwe()",
+        "hotfix"
+      ],
+      "showLog": false
+    }
+  ]
+}
