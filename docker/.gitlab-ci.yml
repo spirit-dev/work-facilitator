@@ -1,0 +1,23 @@
+include:
+  - project: templates/gitlab/container-ci
+    ref: main
+    file: container-ci-kaniko.yml
+
+.container-building-variables:
+  variables: &container-building-variables
+    STL_NAME: "work-facilitator"
+    CONTAINER_BUILD_ARGS: "--build-arg STL_NAME=${STL_NAME} --target=build"
+
+# BUILD
+
+build-go-container:
+  extends: .container-build-tar
+  variables:
+    <<: *container-building-variables
+# PUBLISH
+
+# publish-transmission-cleaner:
+#   extends: .container-publish
+#   variables:
+#     <<: *container-building-variables
+#     ADDITIONAL_DESTINATIONS: "latest"

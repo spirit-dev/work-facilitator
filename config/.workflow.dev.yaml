@@ -1,0 +1,57 @@
+global:
+  app_name: "WorkFlow"
+  script_name: "work-facilitator"
+  version: 3.5.5-dev
+  enforce_standard: "True"
+  log_level: "info" # trace,info,debug,warn,error,fatal,panic
+  default_branch: "main"
+  ssh_key_id: ""
+
+  # GitLab
+  commit_expr: '((^(feat|fix|docs|style|refactor|test|build|chore|perf)(\(.+\))?: (.{2,}))|^(Notes added by "git notes add"))|(Merge (.*\s*)*)|(Initial commit$)'
+  commit_content: "feat|fix|docs|style|refactor|test|build|chore|perf"
+  commit_template: "{{type}}: {{issue}} "
+
+  branch_expr: '(feat|fix|release|renovate)\/*'
+  branch_content: "feat|fix|release|renovate"
+  branch_template: "{{type}}/{{issue}}_{{summary}}"
+  branch_separator: "_"
+
+  type_mapping: '{"feat": "feat", "fix": "fix", "release": "build", "renovate": "refactor"}'
+  jira_ticket_expr: '[A-Z]{2,}-\d+'
+
+  # JIRA
+  # commit_expr: '((^(feat|fix|docs|style|refactor|test|build|chore|perf)(\(.+\))?: (.{2,}))|^(Notes added by "git notes add"))|(Merge (.*\s*)*)|(Initial commit$)'
+  # commit_content: 'feat|fix|docs|style|refactor|test|build|chore|perf'
+  # commit_template: "{{type}}: {{issue}} "
+  # branch_expr: '(feature|hotfix|bugfix|release|renovate)\/*'
+  # branch_content: 'feature|hotfix|bugfix|release|renovate'
+  # branch_template: "{{type}}/{{issue}}_{{summary}}"
+  # type_mapping: '{"feature": "feat", "hotfix": "fix", "bugfix": "fix", "release": "build", "renovate": "refactor"}'
+  # jira_ticket_expr: '[A-Z]{2,}-\d+'
+
+ticketing:
+  jira:
+    enabled: False
+    server: http://jira.not.yeah
+    username: user
+    password: pass # pragma: allowlist secret
+  gitlab:
+    enabled: True
+    server: https://gitlab.some.thing
+    token: glpat-something # pragma: allowlist secret
+
+ai:
+  enabled: False
+  provider: "openai" # Options: openai, claude, vertexai
+  api_key: "$OPENAI_API_KEY" # Use $ENV_VAR to reference environment variables
+  model: "" # Leave empty for default (gpt-4 for openai, claude-3-5-sonnet-20241022 for claude, gemini-2.5-flash for vertexai)
+  max_tokens: 1024
+  temperature: 0.7
+  timeout: 30 # seconds
+  exclude_patterns: [] # File patterns to exclude from AI analysis (e.g., ["*.env", "secrets/*"])
+
+  # Vertex AI specific settings (only needed if provider is "vertexai")
+  google_project_id: "" # Google Cloud project ID (can be auto-detected from service account key)
+  google_location: "us-central1" # Options: us-central1, us-east4, europe-west1, asia-southeast1, global
+  google_service_account_key: "" # Path to service account key JSON file (e.g., "/home/user/.config/gcp/key.json" or "$GOOGLE_SERVICE_ACCOUNT_KEY")
