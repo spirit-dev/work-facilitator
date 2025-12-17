@@ -1,0 +1,46 @@
+global:
+  app_name: "WorkFlow"
+  script_name: "work-facilitator"
+  version: 3.5.5
+  enforce_standard: {{ facilitators.work.enforce_standard | quote }}
+  log_level: {{ facilitators.work.log_level | quote }}
+  default_branch: {{ facilitators.work.default_branch | quote }}
+  ssh_key_id: {{ facilitators.work.ssh_key_id | quote }}
+
+  commit_expr: {{ facilitators.work.commit_expr | quote }}
+  commit_content: {{ facilitators.work.commit_content | quote }}
+  commit_template: {{ facilitators.work.commit_template | quote }}
+
+  branch_expr: {{ facilitators.work.branch_expr | quote }}
+  branch_content: {{ facilitators.work.branch_content | quote }}
+  branch_template: {{ facilitators.work.branch_template | quote }}
+  branch_separator: "{{ facilitators.work.branch_separator }}"
+
+  type_mapping: {{ facilitators.work.type_mapping | quote }}
+  jira_ticket_expr: {{ facilitators.work.jira_ticket_expr | quote }}
+
+ticketing:
+  jira:
+    enabled: {{ facilitators.work.ticketing.jira.enabled | quote }}
+    server: {{ facilitators.work.ticketing.jira.server | quote }}
+    username: {{ facilitators.work.ticketing.jira.username | quote }}
+    password: {{ facilitators.work.ticketing.jira.password | quote }}
+  gitlab:
+    enabled: {{ facilitators.work.ticketing.gitlab.enabled | quote }}
+    server: {{ facilitators.work.ticketing.gitlab.server | quote }}
+    token: {{ facilitators.work.ticketing.gitlab.token | quote }}
+
+ai:
+  enabled: {{ facilitators.work.ai.enabled | default(False) | quote }}
+  provider: {{ facilitators.work.ai.provider | default("openai") | quote }}
+  api_key: {{ facilitators.work.ai.api_key | default("$OPENAI_API_KEY") | quote }}
+  model: {{ facilitators.work.ai.model | default("") | quote }}
+  max_tokens: {{ facilitators.work.ai.max_tokens | default(1024) }}
+  temperature: {{ facilitators.work.ai.temperature | default(0.7) }}
+  timeout: {{ facilitators.work.ai.timeout | default(30) }}
+  exclude_patterns: {{ facilitators.work.ai.exclude_patterns | default([]) }}
+
+  # Vertex AI specific settings
+  google_project_id: {{ facilitators.work.ai.google_project_id | default("") | quote }}
+  google_location: {{ facilitators.work.ai.google_location | default("us-central1") | quote }}
+  google_service_account_key: {{ facilitators.work.ai.google_service_account_key | default("") | quote }}
