@@ -16,15 +16,16 @@ import (
 func RunPreCommitHooks() error {
 	SpinStartDisplay("Running pre-commit hooks")
 
-	// Method 1: Try 'git hook run pre-commit'
+	// Method 1: Try 'git hook run --ignore-missing pre-commit'
 	// This is the preferred modern way as it handles configuration properly
-	cmd := exec.Command("git", "hook", "run", "pre-commit")
+	// --ignore-missing ensures we don't fail if no hook exists
+	cmd := exec.Command("git", "hook", "run", "--ignore-missing", "pre-commit")
 
 	// Capture output to show to user if it fails
 	output, err := cmd.CombinedOutput()
 
 	if err == nil {
-		// Success
+		// Success (hook passed or was missing)
 		SpinStopDisplay("success")
 		return nil
 	}
@@ -37,8 +38,7 @@ func RunPreCommitHooks() error {
 		// Check if it's a git error rather than a hook failure
 		// Git errors usually start with "git:" or "fatal:"
 		isGitError := strings.Contains(outputStr, "git: 'hook' is not a git command") ||
-			strings.Contains(outputStr, "fatal: not a git repository") ||
-			strings.Contains(outputStr, "fatal:")
+			strings.Contains(outputStr, "fatal: not a git repository")
 
 		if !isGitError {
 			// It's likely a hook failure
@@ -50,12 +50,10 @@ func RunPreCommitHooks() error {
 		// If it looks like a git command error, we fall through to fallback
 	}
 
-	// If we get here, it might be that 'git hook' command is not supported (old git)
-	// or some other error occurred. Let's try the fallback method.
-
 	// Method 2: Execute .git/hooks/pre-commit directly
-	// We assume we are at the root of the repo as is standard for this tool
-	gitDir := ".git"
+	// We use repoBasePath() to find the absolute path to the repo root
+	// Note: repoBasePath() is available in the helper package and assumes repo is initialized
+	gitDir := filepath.Join(repoBasePath(), ".git")
 	hookPath := filepath.Join(gitDir, "hooks", "pre-commit")
 
 	// Check if file exists
