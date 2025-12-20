@@ -24,9 +24,6 @@ var (
 	noPushAICommitArg   bool
 	allFilesAICommitArg bool
 	forceAICommitArg    bool
-	providerAICommitArg string
-	noAIAICommitArg     bool
-	dryRunAICommitArg   bool
 
 	// local variables
 	commitMessageAICommit string
@@ -53,10 +50,10 @@ func aiCommitPreRunCommand(cmd *cobra.Command, args []string) {
 	helper.SpinStartDisplay("Verifications - ai-commit...")
 
 	// Check if AI is enabled
-	if !RootConfig.AIEnabled && !noAIAICommitArg {
+	if !RootConfig.AIEnabled {
 		helper.SpinStopDisplay("fail")
 		log.Warningln("AI features are not enabled in configuration.")
-		log.Warningln("Set 'ai.enabled: true' in ~/.workflow.yaml or use --no-ai flag")
+		log.Warningln("Set 'ai.enabled: true' in ~/.workflow.yaml")
 		os.Exit(1)
 	}
 
@@ -97,13 +94,8 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 
 	helper.SpinStopDisplay("success")
 
-	// Generate commit message with AI (unless --no-ai flag)
-	if noAIAICommitArg {
-		// Manual message entry
-		commitMessageAICommit = promptForMessage()
-	} else {
-		commitMessageAICommit = generateAICommitMessage(diff)
-	}
+	// Generate commit message with AI
+	commitMessageAICommit = generateAICommitMessage(diff)
 
 	// Interactive review
 	finalMessage := reviewAndEditMessage(commitMessageAICommit)
@@ -121,15 +113,6 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 			log.Fatalln("Commit message does not comply with standard")
 		}
 		finalMessage = fullMessage
-	}
-
-	// Dry run - just show the message
-	if dryRunAICommitArg {
-		fmt.Println("\n=== Dry Run - Commit Message ===")
-		fmt.Println(finalMessage)
-		fmt.Println("================================")
-		helper.ByeByeDisplay()
-		return
 	}
 
 	// Perform commit
@@ -157,17 +140,11 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 func generateAICommitMessage(diff string) string {
 	helper.SpinStartDisplay("Generating commit message with AI")
 
-	// Determine provider
-	provider := RootConfig.AIProvider
-	if providerAICommitArg != "" {
-		provider = providerAICommitArg
-	}
-
 	// Create AI provider
 	var aiProvider ai.Provider
 	timeout := time.Duration(RootConfig.AITimeout) * time.Second
 
-	switch provider {
+	switch RootConfig.AIProvider {
 	case "openai":
 		aiProvider = ai.NewOpenAIProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
 	case "claude":
@@ -187,7 +164,7 @@ func generateAICommitMessage(diff string) string {
 		}
 	default:
 		helper.SpinStopDisplay("fail")
-		log.Fatalln("Unknown AI provider:", provider)
+		log.Fatalln("Unknown AI provider:", RootConfig.AIProvider)
 	}
 
 	// Validate provider
@@ -225,9 +202,9 @@ func generateAICommitMessage(diff string) string {
 }
 
 func reviewAndEditMessage(message string) string {
-	fmt.Println("\n=== AI Generated Commit Message ===")
+	fmt.Println("=== AI Generated Commit Message ===")
 	fmt.Println(message)
-	fmt.Println("====================================")
+	fmt.Println("===================================")
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -302,9 +279,6 @@ func init() {
 	aiCommitCmd.Flags().BoolVarP(&noPushAICommitArg, "no-push", "n", false, "Activate option to avoid pushing commits")
 	aiCommitCmd.Flags().BoolVarP(&allFilesAICommitArg, "all-files", "a", false, "Stage all modified files before commit")
 	aiCommitCmd.Flags().BoolVarP(&forceAICommitArg, "force-commit", "f", false, "Force the commit if we are not in a workflow")
-	aiCommitCmd.Flags().StringVarP(&providerAICommitArg, "provider", "p", "", "Override AI provider (openai, claude, vertexai)")
-	aiCommitCmd.Flags().BoolVar(&noAIAICommitArg, "no-ai", false, "Skip AI generation and enter message manually")
-	aiCommitCmd.Flags().BoolVarP(&dryRunAICommitArg, "dry-run", "d", false, "Preview commit message without committing")
 
 	aiCommitCmd.Flags().SortFlags = false
 }

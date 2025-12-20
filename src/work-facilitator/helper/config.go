@@ -215,11 +215,7 @@ func initConfig() {
 	viper.SetConfigType("yaml")      // REQUIRED if the config file does not have the extension in the name
 	// Search config in home directory with name ".cobra" (without extension).
 	viper.AddConfigPath(homeDir()) // TODO re-enable the home dir as a first place to look at
-	// viper.AddConfigPath("/home/jbordat/Documents/Projects/scripts/work-facilitator/config") // path to look for the config file in
-	// viper.AddConfigPath("/home/jbordat/Documents/projects/scripts/work-facilitator/config") // path to look for the config file in
-	// viper.AddConfigPath("/Users/bordaje1/Documents/Projects/scripts/work-facilitator/config") // path to look for the config file in
-	// viper.AddConfigPath("/home/jbordat/Documents/tmp/work-facilitator/config")
-	// viper.AddConfigPath("/code/config") // call multiple times to add many search paths
+	// viper.AddConfigPath("/home/jbordat/Documents/projects/perso/work-facilitator/config") // path to look for the config file in
 
 	err1 := viper.ReadInConfig() // Find and read the config file
 	if err1 != nil {             // Handle errors reading the config file

@@ -64,11 +64,14 @@ ai:
 - JIRA configuration
 - GitLab configuration
 
-### AI Integration (New)
+### AI Integration
 
 - Provider selection (openai, claude, vertexai)
 - API keys and authentication
 - Model configuration
+  - For Vertex AI: Supports custom publishers using "publisher/model" format
+    - Example: `"google-anthropic-claude/claude-sonnet-4.5-20250517"`
+    - Defaults to "google" publisher if no "/" is present
 - Vertex AI specific settings:
   - Google Cloud project ID
   - Region/location
@@ -103,6 +106,13 @@ Before committing changes to configuration files:
 5. Run `make test-dev` to verify configuration loading
 
 ## Recent Changes
+
+### 2024-12-17: Added Vertex AI Custom Publisher Support
+
+- Enhanced Vertex AI model configuration to support custom publishers
+- Model string format: `"publisher/model"` (e.g., `"google-anthropic-claude/claude-sonnet-4.5-20250517"`)
+- Backward compatible: existing model strings without "/" default to "google" publisher
+- Updated all configuration files with examples and documentation
 
 ### 2024-12-15: Added AI Integration
 

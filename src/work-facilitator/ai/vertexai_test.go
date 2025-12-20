@@ -9,6 +9,71 @@ import (
 	"testing"
 )
 
+func TestParseModelString(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		wantPublisher string
+		wantModel     string
+	}{
+		{
+			name:          "Model with custom publisher",
+			input:         "google-anthropic-claude/claude-sonnet-4.5-20250517",
+			wantPublisher: "google-anthropic-claude",
+			wantModel:     "claude-sonnet-4.5-20250517",
+		},
+		{
+			name:          "Model without publisher (default to google)",
+			input:         "gemini-2.5-flash",
+			wantPublisher: "google",
+			wantModel:     "gemini-2.5-flash",
+		},
+		{
+			name:          "Model with multiple slashes (use first as separator)",
+			input:         "custom/model/with/slashes",
+			wantPublisher: "custom",
+			wantModel:     "model/with/slashes",
+		},
+		{
+			name:          "Empty string",
+			input:         "",
+			wantPublisher: "google",
+			wantModel:     "",
+		},
+		{
+			name:          "Only publisher with trailing slash",
+			input:         "publisher/",
+			wantPublisher: "publisher",
+			wantModel:     "",
+		},
+		{
+			name:          "Custom publisher with simple model",
+			input:         "my-custom-publisher/my-model",
+			wantPublisher: "my-custom-publisher",
+			wantModel:     "my-model",
+		},
+		{
+			name:          "Another custom publisher",
+			input:         "anthropic/claude-3-opus",
+			wantPublisher: "anthropic",
+			wantModel:     "claude-3-opus",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPublisher, gotModel := ParseModelString(tt.input)
+
+			if gotPublisher != tt.wantPublisher {
+				t.Errorf("ParseModelString() publisher = %v, want %v", gotPublisher, tt.wantPublisher)
+			}
+			if gotModel != tt.wantModel {
+				t.Errorf("ParseModelString() model = %v, want %v", gotModel, tt.wantModel)
+			}
+		})
+	}
+}
+
 func TestNewVertexAIProvider(t *testing.T) {
 	// Create a temporary service account key file
 	tmpDir := t.TempDir()
@@ -111,7 +176,8 @@ func TestNewVertexAIProvider(t *testing.T) {
 	}
 }
 
-func TestVertexAIProviderValidate(t *testing.T) {
+func TestNewVertexAIProviderParsing(t *testing.T) {
+	// Create a temporary service account key file
 	tmpDir := t.TempDir()
 	keyPath := filepath.Join(tmpDir, "test-key.json")
 
@@ -119,6 +185,76 @@ func TestVertexAIProviderValidate(t *testing.T) {
 		"type": "service_account",
 		"project_id": "test-project",
 		"private_key_id": "",
+		"private_key": "",
+		"client_email": "test@test-project.iam.gserviceaccount.com",
+		"client_id": "123456789",
+		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+		"token_uri": "https://oauth2.googleapis.com/token",
+		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
+	}`
+
+	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
+		t.Fatalf("Failed to create test key file: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		model         string
+		wantPublisher string
+		wantModel     string
+	}{
+		{
+			name:          "Model with custom publisher",
+			model:         "google-anthropic-claude/claude-sonnet-4.5-20250517",
+			wantPublisher: "google-anthropic-claude",
+			wantModel:     "claude-sonnet-4.5-20250517",
+		},
+		{
+			name:          "Model without publisher defaults to google",
+			model:         "gemini-2.5-flash",
+			wantPublisher: "google",
+			wantModel:     "gemini-2.5-flash",
+		},
+		{
+			name:          "Empty model uses default",
+			model:         "",
+			wantPublisher: "google",
+			wantModel:     "gemini-2.5-flash",
+		},
+		{
+			name:          "Custom publisher with simple model",
+			model:         "anthropic/claude-3-opus",
+			wantPublisher: "anthropic",
+			wantModel:     "claude-3-opus",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider, err := NewVertexAIProvider("test-project", "us-central1", keyPath, tt.model, 0)
+			if err != nil {
+				t.Fatalf("NewVertexAIProvider() error = %v", err)
+			}
+
+			if provider.publisher != tt.wantPublisher {
+				t.Errorf("Expected publisher %s, got %s", tt.wantPublisher, provider.publisher)
+			}
+			if provider.model != tt.wantModel {
+				t.Errorf("Expected model %s, got %s", tt.wantModel, provider.model)
+			}
+		})
+	}
+}
+
+func TestVertexAIProviderValidate(t *testing.T) {
+	tmpDir := t.TempDir()
+	keyPath := filepath.Join(tmpDir, "test-key.json")
+
+	keyContent := `{
+		"type": "service_account",
+		"project_id": "test-project",
+		"private_key_id": "test-key-id",
 		"private_key": "",
 		"client_email": "test@test-project.iam.gserviceaccount.com",
 		"client_id": "123456789",
@@ -201,34 +337,145 @@ func TestVertexAIProviderValidate(t *testing.T) {
 	}
 }
 
+func TestVertexAIProviderValidatePublisher(t *testing.T) {
+	tmpDir := t.TempDir()
+	keyPath := filepath.Join(tmpDir, "test-key.json")
+
+	keyContent := `{
+		"type": "service_account",
+		"project_id": "test-project",
+		"private_key_id": "test-key-id",
+		"private_key": "",
+		"client_email": "test@test-project.iam.gserviceaccount.com",
+		"client_id": "123456789",
+		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+		"token_uri": "https://oauth2.googleapis.com/token",
+		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
+	}`
+
+	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
+		t.Fatalf("Failed to create test key file: %v", err)
+	}
+
+	key, err := loadServiceAccountKey(keyPath)
+	if err != nil {
+		t.Fatalf("Failed to load service account key: %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		publisher string
+		wantErr   bool
+		errMsg    string
+	}{
+		{
+			name:      "Valid default publisher",
+			publisher: "google",
+			wantErr:   false,
+		},
+		{
+			name:      "Valid custom publisher",
+			publisher: "google-anthropic-claude",
+			wantErr:   false,
+		},
+		{
+			name:      "Empty publisher should fail",
+			publisher: "",
+			wantErr:   true,
+			errMsg:    "publisher is required",
+		},
+		{
+			name:      "Another custom publisher",
+			publisher: "anthropic",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := &VertexAIProvider{
+				projectID:         "test-project",
+				location:          "us-central1",
+				publisher:         tt.publisher,
+				model:             "test-model",
+				serviceAccountKey: key,
+			}
+
+			err := provider.Validate()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr && tt.errMsg != "" {
+				if err == nil {
+					t.Errorf("Expected error message containing '%s', got nil", tt.errMsg)
+				} else if err.Error() == "" {
+					t.Errorf("Expected error message containing '%s', got empty error", tt.errMsg)
+				}
+			}
+		})
+	}
+}
+
 func TestBuildEndpoint(t *testing.T) {
 	tests := []struct {
 		name      string
 		projectID string
 		location  string
+		publisher string
 		model     string
 		want      string
 	}{
 		{
-			name:      "US Central 1",
+			name:      "US Central 1 with default publisher",
 			projectID: "my-project",
 			location:  "us-central1",
+			publisher: "google",
 			model:     "gemini-2.5-flash",
 			want:      "https://us-central1-aiplatform.googleapis.com/v1/projects/my-project/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent",
 		},
 		{
-			name:      "Global location",
+			name:      "Global location with default publisher",
 			projectID: "my-project",
 			location:  "global",
+			publisher: "google",
 			model:     "gemini-2.5-flash",
 			want:      "https://aiplatform.googleapis.com/v1/projects/my-project/locations/global/publishers/google/models/gemini-2.5-flash:generateContent",
 		},
 		{
-			name:      "Europe West 1",
+			name:      "Europe West 1 with default publisher",
 			projectID: "my-project",
 			location:  "europe-west1",
+			publisher: "google",
 			model:     "gemini-2.5-pro",
 			want:      "https://europe-west1-aiplatform.googleapis.com/v1/projects/my-project/locations/europe-west1/publishers/google/models/gemini-2.5-pro:generateContent",
+		},
+		{
+			name:      "Custom publisher google-anthropic-claude",
+			projectID: "my-project",
+			location:  "us-central1",
+			publisher: "google-anthropic-claude",
+			model:     "claude-sonnet-4.5-20250517",
+			want:      "https://us-central1-aiplatform.googleapis.com/v1/projects/my-project/locations/us-central1/publishers/google-anthropic-claude/models/claude-sonnet-4.5-20250517:generateContent",
+		},
+		{
+			name:      "Custom publisher with global location",
+			projectID: "my-project",
+			location:  "global",
+			publisher: "google-anthropic-claude",
+			model:     "claude-sonnet-4.5-20250517",
+			want:      "https://aiplatform.googleapis.com/v1/projects/my-project/locations/global/publishers/google-anthropic-claude/models/claude-sonnet-4.5-20250517:generateContent",
+		},
+		{
+			name:      "Another custom publisher",
+			projectID: "test-project",
+			location:  "us-east4",
+			publisher: "anthropic",
+			model:     "claude-3-opus",
+			want:      "https://us-east4-aiplatform.googleapis.com/v1/projects/test-project/locations/us-east4/publishers/anthropic/models/claude-3-opus:generateContent",
 		},
 	}
 
@@ -237,6 +484,7 @@ func TestBuildEndpoint(t *testing.T) {
 			provider := &VertexAIProvider{
 				projectID: tt.projectID,
 				location:  tt.location,
+				publisher: tt.publisher,
 				model:     tt.model,
 			}
 
