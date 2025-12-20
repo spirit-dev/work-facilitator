@@ -1,7 +1,7 @@
 global:
   app_name: "WorkFlow"
   script_name: "work-facilitator"
-  version: 3.6.1-dev
+  version: 3.6.2-dev
   enforce_standard: "True"
   log_level: "info" # trace,info,debug,warn,error,fatal,panic
   default_branch: "main"
