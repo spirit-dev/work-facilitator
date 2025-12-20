@@ -36,3 +36,5 @@ test.sh
 config/workflow.ini
 dist/*
 !dist/.gitkeep
+
+__debug_bin*
