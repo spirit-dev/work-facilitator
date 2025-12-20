@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/go-git/go-git/v5"
 )
 
 func TestRunPreCommitHooks(t *testing.T) {
@@ -25,6 +27,19 @@ func TestRunPreCommitHooks(t *testing.T) {
 		t.Fatalf("Failed to change to temp dir: %v", err)
 	}
 
+	// Initialize a git repo so 'git hook run' can work (if git is installed)
+	// and so repoBasePath() works
+	r, err := git.PlainInit(tempDir, false)
+	if err != nil {
+		t.Fatalf("Failed to init git repo: %v", err)
+	}
+
+	// Set the global repo variable for repoBasePath() to work
+	// We save the old one to restore it (though it's likely nil in test context)
+	oldRepo := repo
+	repo = r
+	defer func() { repo = oldRepo }()
+
 	// Create .git/hooks directory
 	hooksDir := filepath.Join(".git", "hooks")
 	if err := os.MkdirAll(hooksDir, 0755); err != nil {
@@ -32,32 +47,28 @@ func TestRunPreCommitHooks(t *testing.T) {
 	}
 
 	// Test Case 1: No hooks exist
-	// Should pass (return nil)
+	// Should return nil (success)
 	if err := RunPreCommitHooks(); err != nil {
-		t.Errorf("Expected no error when no hooks exist, got: %v", err)
+		t.Errorf("Expected success when no hooks exist, got error: %v", err)
 	}
 
-	// Test Case 2: Hook exists and passes
+	// Test Case 2: Hook exists and succeeds
 	hookPath := filepath.Join(hooksDir, "pre-commit")
-	passScript := "#!/bin/sh\nexit 0"
-	if err := os.WriteFile(hookPath, []byte(passScript), 0755); err != nil {
-		t.Fatalf("Failed to write pass hook: %v", err)
+	// Create a simple success hook
+	successScript := "#!/bin/sh\nexit 0"
+	if err := os.WriteFile(hookPath, []byte(successScript), 0755); err != nil {
+		t.Fatalf("Failed to create success hook: %v", err)
 	}
 
-	// Note: We can't easily test 'git hook run' without a real git repo,
-	// but our fallback logic checks for the file execution.
-	// To ensure fallback logic is tested, we rely on 'git hook run' failing
-	// (which it will, as this isn't a real git repo, just a dir with .git/hooks)
-	// or being unavailable.
-
 	if err := RunPreCommitHooks(); err != nil {
-		t.Errorf("Expected no error when hook passes, got: %v", err)
+		t.Errorf("Expected success when hook succeeds, got error: %v", err)
 	}
 
 	// Test Case 3: Hook exists and fails
+	// Create a failing hook
 	failScript := "#!/bin/sh\necho 'Hook failed'\nexit 1"
 	if err := os.WriteFile(hookPath, []byte(failScript), 0755); err != nil {
-		t.Fatalf("Failed to write fail hook: %v", err)
+		t.Fatalf("Failed to create failing hook: %v", err)
 	}
 
 	if err := RunPreCommitHooks(); err == nil {
