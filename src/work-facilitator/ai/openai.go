@@ -185,10 +185,6 @@ func buildPrompt(diff string, options *GenerateOptions) string {
 	prompt.WriteString(diff)
 	prompt.WriteString("\n```\n\n")
 
-	if options.CommitStandard != "" {
-		prompt.WriteString(fmt.Sprintf("Follow this commit message standard: %s\n", options.CommitStandard))
-	}
-
 	if options.BranchName != "" {
 		prompt.WriteString(fmt.Sprintf("Current branch: %s\n", options.BranchName))
 	}
@@ -197,9 +193,17 @@ func buildPrompt(diff string, options *GenerateOptions) string {
 		prompt.WriteString(fmt.Sprintf("Additional context: %s\n", options.AdditionalContext))
 	}
 
-	prompt.WriteString("\nProvide ONLY the commit message, without any explanation or additional text. ")
-	prompt.WriteString("The message should be a single line (or multiple lines if body is needed). ")
-	prompt.WriteString("Do not include markdown formatting or code blocks in your response.")
+	prompt.WriteString("\nIMPORTANT FORMATTING REQUIREMENTS:\n")
+	prompt.WriteString("- Provide ONLY the commit message as a single line of plain text\n")
+	prompt.WriteString("- Do NOT use any prefixes like 'feat:', 'fix:', 'refactor:', 'chore:', etc.\n")
+	prompt.WriteString("- Do NOT use backticks, quotes, asterisks, or any markdown formatting\n")
+	prompt.WriteString("- Do NOT use special characters like colons, parentheses, brackets, or emojis\n")
+	prompt.WriteString("- Do NOT include any explanation, context, or additional text\n")
+	prompt.WriteString("- Start directly with the action verb (e.g., 'Add', 'Update', 'Remove', 'Fix', 'Enhance')\n")
+	prompt.WriteString("- Keep it simple and descriptive\n\n")
+	prompt.WriteString("Example of CORRECT format: 'Add user authentication to login page'\n")
+	prompt.WriteString("Example of INCORRECT format: 'feat: Add user authentication to login page'\n")
+	prompt.WriteString("Example of INCORRECT format: 'Add `user authentication` to login page'\n")
 
 	return prompt.String()
 }
