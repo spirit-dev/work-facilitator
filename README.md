@@ -57,9 +57,13 @@ Also, it takes the standards in consideration
 
 Commit current changes properly prefixed
 
+**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured). It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted.
+
 ### ai-commit
 
 **AI-Assisted Commit Message Generation** - Leverage AI to generate meaningful commit messages based on your staged changes.
+
+**Pre-commit Hooks**: Like the standard commit command, `ai-commit` runs pre-commit hooks before generating the message. This ensures you don't waste AI resources on code that fails validation.
 
 The `ai-commit` command analyzes your git diff and uses AI providers (OpenAI, Claude, or Vertex AI) to generate contextual, well-formatted commit messages that follow your project's standards.
 
