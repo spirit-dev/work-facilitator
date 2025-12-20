@@ -35,6 +35,11 @@ ai:
   provider: {{ facilitators.work.ai.provider | default("openai") | quote }}
   api_key: {{ facilitators.work.ai.api_key | default("$OPENAI_API_KEY") | quote }}
   model: {{ facilitators.work.ai.model | default("") | quote }}
+        # For Vertex AI, you can specify a custom publisher using the format: "publisher/model"
+        # Examples:
+        #   - "gemini-2.5-flash" (uses default "google" publisher)
+        #   - "google-anthropic-claude/claude-sonnet-4.5-20250517" (uses custom publisher)
+        #   - "anthropic/claude-3-opus" (uses custom publisher)
   max_tokens: {{ facilitators.work.ai.max_tokens | default(1024) }}
   temperature: {{ facilitators.work.ai.temperature | default(0.7) }}
   timeout: {{ facilitators.work.ai.timeout | default(30) }}

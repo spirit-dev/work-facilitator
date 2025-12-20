@@ -76,4 +76,4 @@ repos:
     hooks:
       - id: markdownlint
         args: ["-f"]
-        exclude: openspec
+        exclude: ^(openspec/|.serena/)
