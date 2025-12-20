@@ -8,11 +8,9 @@
       "program": "${workspaceFolder}/src/work-facilitator",
       "console": "integratedTerminal",
       "env": {},
-      "args": [
-        "ai-commit",
-        "-a"
-      ],
-      "showLog": false
+      "args": ["ai-commit", "-a"],
+      "showLog": false,
+      "dlvFlags": ["--check-go-version=false"]
     }
   ]
 }
