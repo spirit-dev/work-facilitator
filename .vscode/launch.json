@@ -12,7 +12,10 @@
         "ai-commit",
         "-a"
       ],
-      "showLog": false
+      "showLog": false,
+      "dlvFlags": [
+        "--check-go-version=false"
+      ]
     }
   ]
 }
