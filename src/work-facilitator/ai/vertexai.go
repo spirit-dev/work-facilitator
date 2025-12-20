@@ -32,7 +32,8 @@ const (
 type VertexAIProvider struct {
 	projectID         string
 	location          string
-	model             string
+	publisher         string // Publisher for the model (e.g., "google", "google-anthropic-claude")
+	model             string // Model name (e.g., "gemini-2.5-flash", "claude-sonnet-4.5-20250517")
 	serviceAccountKey *ServiceAccountKey
 	timeout           time.Duration
 	cachedToken       string
@@ -53,6 +54,32 @@ type ServiceAccountKey struct {
 	ClientX509CertURL       string `json:"client_x509_cert_url"`
 }
 
+// ParseModelString parses a model string into publisher and model components.
+// The model string can be in one of two formats:
+//   - "publisher/model" - e.g., "google-anthropic-claude/claude-sonnet-4.5-20250517"
+//   - "model" - e.g., "gemini-2.5-flash" (defaults to "google" publisher)
+//
+// If the model string contains multiple "/" characters, only the first one is used
+// as the separator between publisher and model. For example:
+//   - "custom/model/with/slashes" → publisher: "custom", model: "model/with/slashes"
+//
+// Returns the publisher and model as separate strings.
+func ParseModelString(modelStr string) (publisher, model string) {
+	// Check if the model string contains a "/" separator
+	if idx := strings.Index(modelStr, "/"); idx != -1 {
+		// Split on the first "/" only
+		publisher = modelStr[:idx]
+		model = modelStr[idx+1:]
+	} else {
+		// No "/" found, use default publisher
+		publisher = "google"
+		model = modelStr
+	}
+
+	log.Debugln("Parsed model string: input=", modelStr, ", publisher=", publisher, ", model=", model)
+	return publisher, model
+}
+
 // NewVertexAIProvider creates a new Vertex AI provider
 func NewVertexAIProvider(projectID, location, serviceAccountKeyPath, model string, timeout time.Duration) (*VertexAIProvider, error) {
 	if model == "" {
@@ -64,6 +91,10 @@ func NewVertexAIProvider(projectID, location, serviceAccountKeyPath, model strin
 	if timeout == 0 {
 		timeout = 30 * time.Second
 	}
+
+	// Parse model string to extract publisher and model
+	publisher, parsedModel := ParseModelString(model)
+	log.Debugln("Vertex AI provider initialized with publisher:", publisher, "model:", parsedModel)
 
 	// Load service account key
 	key, err := loadServiceAccountKey(serviceAccountKeyPath)
@@ -79,7 +110,8 @@ func NewVertexAIProvider(projectID, location, serviceAccountKeyPath, model strin
 	return &VertexAIProvider{
 		projectID:         projectID,
 		location:          location,
-		model:             model,
+		publisher:         publisher,
+		model:             parsedModel,
 		serviceAccountKey: key,
 		timeout:           timeout,
 	}, nil
@@ -98,6 +130,9 @@ func (p *VertexAIProvider) Validate() error {
 	if p.location == "" {
 		return NewProviderError(p.Name(), "location is required", nil)
 	}
+	if p.publisher == "" {
+		return NewProviderError(p.Name(), "publisher is required", nil)
+	}
 	if p.serviceAccountKey == nil { // pragma: allowlist secret
 		return NewProviderError(p.Name(), "service account key is required", nil)
 	}
@@ -106,7 +141,7 @@ func (p *VertexAIProvider) Validate() error {
 	}
 
 	// Validate location
-	validLocations := []string{"us-central1", "us-east4", "europe-west1", "asia-southeast1", "global"}
+	validLocations := []string{"us-central1", "us-east4", "us-east5", "europe-west1", "asia-southeast1", "global"}
 	isValidLocation := false
 	for _, loc := range validLocations {
 		if p.location == loc {
@@ -211,13 +246,13 @@ func (p *VertexAIProvider) GenerateCommitMessage(ctx context.Context, diff strin
 
 // buildEndpoint constructs the Vertex AI API endpoint
 func (p *VertexAIProvider) buildEndpoint() string {
-	// Format: https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent
+	// Format: https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/{publisher}/models/{model}:generateContent
 	if p.location == "global" {
-		return fmt.Sprintf("https://aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
-			p.projectID, p.location, p.model)
+		return fmt.Sprintf("https://aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/%s/models/%s:generateContent",
+			p.projectID, p.location, p.publisher, p.model)
 	}
-	return fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
-		p.location, p.projectID, p.location, p.model)
+	return fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/%s/models/%s:generateContent",
+		p.location, p.projectID, p.location, p.publisher, p.model)
 }
 
 // getAccessToken gets or refreshes the OAuth2 access token

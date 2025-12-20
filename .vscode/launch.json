@@ -9,10 +9,8 @@
       "console": "integratedTerminal",
       "env": {},
       "args": [
-        "init",
-        "PLT-0",
-        "test8&*weqwe()",
-        "hotfix"
+        "ai-commit",
+        "-a"
       ],
       "showLog": false
     }
