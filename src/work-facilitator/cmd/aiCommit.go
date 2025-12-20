@@ -94,6 +94,11 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 
 	helper.SpinStopDisplay("success")
 
+	// Run pre-commit hooks
+	if err := helper.RunPreCommitHooks(); err != nil {
+		log.Fatalln("Commit aborted due to pre-commit hook failure")
+	}
+
 	// Generate commit message with AI
 	commitMessageAICommit = generateAICommitMessage(diff)
 
