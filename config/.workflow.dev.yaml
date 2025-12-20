@@ -46,6 +46,11 @@ ai:
   provider: "openai" # Options: openai, claude, vertexai
   api_key: "$OPENAI_API_KEY" # Use $ENV_VAR to reference environment variables
   model: "" # Leave empty for default (gpt-4 for openai, claude-3-5-sonnet-20241022 for claude, gemini-2.5-flash for vertexai)
+            # For Vertex AI, you can specify a custom publisher using the format: "publisher/model"
+            # Examples:
+            #   - "gemini-2.5-flash" (uses default "google" publisher)
+            #   - "google-anthropic-claude/claude-sonnet-4.5-20250517" (uses custom publisher)
+            #   - "anthropic/claude-3-opus" (uses custom publisher)
   max_tokens: 1024
   temperature: 0.7
   timeout: 30 # seconds
