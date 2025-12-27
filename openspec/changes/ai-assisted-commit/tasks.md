@@ -33,6 +33,7 @@
 - [ ] Add option to regenerate message if unsatisfactory
 - [x] Support `--provider` flag to override config
 - [x] Support `--no-ai` flag to skip AI and use manual entry
+- [x] Support `-s` / `--skip-precommit` flag
 - [x] Add `--dry-run` flag to preview without committing
 
 ## 5. Error Handling & Resilience

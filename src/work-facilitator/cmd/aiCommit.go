@@ -21,9 +21,10 @@ import (
 
 var (
 	// Cmd args
-	noPushAICommitArg   bool
-	allFilesAICommitArg bool
-	forceAICommitArg    bool
+	noPushAICommitArg        bool
+	allFilesAICommitArg      bool
+	forceAICommitArg         bool
+	skipPreCommitAICommitArg bool
 
 	// local variables
 	commitMessageAICommit string
@@ -94,9 +95,11 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 
 	helper.SpinStopDisplay("success")
 
-	// Run pre-commit hooks
-	if err := helper.RunPreCommitHooks(); err != nil {
-		log.Fatalln("Commit aborted due to pre-commit hook failure")
+	// Run pre-commit hooks (unless skipped)
+	if !skipPreCommitAICommitArg {
+		if err := helper.RunPreCommitHooks(); err != nil {
+			log.Fatalln("Commit aborted due to pre-commit hook failure")
+		}
 	}
 
 	// Generate commit message with AI
@@ -284,6 +287,7 @@ func init() {
 	aiCommitCmd.Flags().BoolVarP(&noPushAICommitArg, "no-push", "n", false, "Activate option to avoid pushing commits")
 	aiCommitCmd.Flags().BoolVarP(&allFilesAICommitArg, "all-files", "a", false, "Stage all modified files before commit")
 	aiCommitCmd.Flags().BoolVarP(&forceAICommitArg, "force-commit", "f", false, "Force the commit if we are not in a workflow")
+	aiCommitCmd.Flags().BoolVarP(&skipPreCommitAICommitArg, "skip-precommit", "s", false, "Skip pre-commit hooks")
 
 	aiCommitCmd.Flags().SortFlags = false
 }
