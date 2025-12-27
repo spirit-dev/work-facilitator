@@ -19,6 +19,7 @@ var (
 	allFilesCommitArg bool
 	messageCommitArg  string
 	forceCommitArg    bool
+	skipPreCommitArg  bool
 
 	// local variables
 	commitMessageCommit string
@@ -86,9 +87,11 @@ func commitCommand(cmd *cobra.Command, args []string) {
 		helper.RepoAddAllFiles(RootConfig.CommitIgnorePatternsCompiled)
 	}
 
-	// Run pre-commit hooks
-	if err := helper.RunPreCommitHooks(); err != nil {
-		log.Fatalln("Commit aborted due to pre-commit hook failure")
+	// Run pre-commit hooks (unless skipped)
+	if !skipPreCommitArg {
+		if err := helper.RunPreCommitHooks(); err != nil {
+			log.Fatalln("Commit aborted due to pre-commit hook failure")
+		}
 	}
 
 	// git commit
@@ -119,6 +122,7 @@ func init() {
 	commitCmd.Flags().BoolVarP(&noPushCommitArg, "no-push", "n", false, "Activate option to avoid pushing commits")
 	commitCmd.Flags().BoolVarP(&allFilesCommitArg, "all-files", "a", false, "specify the merge request number")
 	commitCmd.Flags().BoolVarP(&forceCommitArg, "force-commit", "f", false, "force the commit if we are no in a workflow")
+	commitCmd.Flags().BoolVarP(&skipPreCommitArg, "skip-precommit", "s", false, "Skip pre-commit hooks")
 
 	commitCmd.Flags().SortFlags = false
 }
