@@ -22,6 +22,7 @@ Integrate pre-commit hook execution into the `commit` and `ai-commit` commands. 
 2.  **Command Integration**:
     *   Modify `src/work-facilitator/cmd/commit.go`: Call `RunPreCommitHooks()` before `RepoCommit`.
     *   Modify `src/work-facilitator/cmd/aiCommit.go`: Call `RunPreCommitHooks()` before `generateAICommitMessage` (to save AI tokens/time if hooks fail).
+    *   Add `-s` / `--skip-precommit` flag to both commands to bypass hook execution when needed.
 
 ## Impact
 

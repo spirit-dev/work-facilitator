@@ -25,8 +25,12 @@
 
 ## Pre-commit Hooks
 
-Enforced: JSON/YAML validation, trailing whitespace, EOF fixer, no commits to main/master, Dockerfile linting, secrets detection, markdown linting
+Enforced: JSON/YAML validation, trailing whitespace, EOF fixer, no commits to main/master, Dockerfile linting, secrets detection, markdown linting. Use `-s` flag to skip if necessary.
 
 ## Tooling Preferences
 
 - **Serena MCP**: When available, prefer Serena MCP tools for enhanced code navigation, symbol manipulation, and file operations over built-in alternatives
+
+## Git Operations
+
+- **No Execution**: Do NOT execute git commit or git branch operations. Only suggest the commands to be run.
