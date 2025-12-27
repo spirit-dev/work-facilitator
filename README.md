@@ -4,8 +4,7 @@
 >
 > I love this tool
 
-[![GitLab Sync](https://img.shields.io/badge/gitlab_sync-work_facilitator-blue?style=for-the-badge&logo=gitlab)](https://gitlab-internal.spirit-dev.net/github-mirror/scripts-work-facilitator) <!-- markdownlint-disable MD041 -->
-[![GitHub Mirror](https://img.shields.io/badge/github_mirror-work_facilitator-blue?style=for-the-badge&logo=github)](https://github.com/spirit-dev/work-facilitator)
+
 
 <!--TOC-->
 
@@ -57,7 +56,7 @@ Also, it takes the standards in consideration
 
 Commit current changes properly prefixed
 
-**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured). It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted. Use `-s` or `--skip-precommit` to bypass these checks.
+**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured). It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted.
 
 ### ai-commit
 
@@ -194,7 +193,6 @@ ai:
 - `-a, --all-files`: Stage all modified files before commit
 - `-n, --no-push`: Commit without pushing to remote
 - `-f, --force-commit`: Force commit even if not in a workflow
-- `-s, --skip-precommit`: Skip pre-commit hooks
 - `-p, --provider <name>`: Override AI provider (openai, claude)
 - `--no-ai`: Skip AI generation and enter message manually
 - `-d, --dry-run`: Preview commit message without committing
@@ -271,4 +269,4 @@ Create work based on JIRA or Gitlab informations
 
 ### completion
 
-Generate completion for Linux / Mac systems
+Generate completion for Linux / Mac system
