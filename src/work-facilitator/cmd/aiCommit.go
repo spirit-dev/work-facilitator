@@ -195,6 +195,10 @@ func generateAICommitMessage(diff string) string {
 		options.CommitStandard = RootConfig.CommitExpr
 	}
 
+	// Calculate and display prompt metrics
+	charCount, tokenEstimate := ai.GetPromptMetrics(diff, options)
+	fmt.Printf("Context size: %d chars (~%d tokens)\n", charCount, tokenEstimate)
+
 	// Generate message
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
