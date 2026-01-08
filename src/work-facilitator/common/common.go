@@ -51,6 +51,7 @@ type Config struct {
 	AIProvider                string
 	AIAPIKey                  string
 	AIModel                   string
+	AIBaseURL                 string
 	AIMaxTokens               int
 	AITemperature             float64
 	AITimeout                 int
