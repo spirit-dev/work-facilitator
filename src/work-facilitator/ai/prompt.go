@@ -59,3 +59,12 @@ func buildPrompt(diff string, options *GenerateOptions) string {
 
 	return prompt.String()
 }
+
+// GetPromptMetrics returns the character count and estimated token count for the generated prompt
+func GetPromptMetrics(diff string, options *GenerateOptions) (int, int) {
+	prompt := buildPrompt(diff, options)
+	charCount := len(prompt)
+	// Estimate tokens: ~4 characters per token is a common heuristic for English text/code
+	tokenEstimate := charCount / 4
+	return charCount, tokenEstimate
+}
