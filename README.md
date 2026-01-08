@@ -4,8 +4,7 @@
 >
 > I love this tool
 
-[![GitLab Sync](https://img.shields.io/badge/gitlab_sync-work_facilitator-blue?style=for-the-badge&logo=gitlab)](https://gitlab-internal.spirit-dev.net/github-mirror/scripts-work-facilitator) <!-- markdownlint-disable MD041 -->
-[![GitHub Mirror](https://img.shields.io/badge/github_mirror-work_facilitator-blue?style=for-the-badge&logo=github)](https://github.com/spirit-dev/work-facilitator)
+
 
 <!--TOC-->
 
@@ -57,7 +56,7 @@ Also, it takes the standards in consideration
 
 Commit current changes properly prefixed
 
-**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured). It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted. Use `-s` or `--skip-precommit` to bypass these checks.
+**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured). It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted.
 
 ### ai-commit
 
@@ -82,9 +81,8 @@ Add AI settings to your `~/.workflow.yaml`:
 ```yaml
 ai:
   enabled: true
-  provider: "openai"  # Options: openai, claude, vertexai, llamacpp
+  provider: "openai"  # Options: openai, claude, vertexai
   api_key: "$OPENAI_API_KEY"  # Use $ENV_VAR to reference environment variables
-  base_url: "" # Optional: Base URL for custom providers (e.g., http://localhost:8080/v1 for llamacpp)
   model: ""  # Leave empty for default (gpt-4 for openai, claude-3-5-sonnet-20241022 for claude, gemini-2.5-flash for vertexai)
   max_tokens: 1024
   temperature: 0.7
@@ -183,25 +181,6 @@ ai:
   temperature: 0.7
 ```
 
-**LlamaCPP Setup (Local):**
-
-Use a locally hosted llama.cpp server for privacy-focused, offline commit message generation.
-
-1. Start your llama.cpp server with OpenAI-compatible API:
-   ```bash
-   ./server -m models/my-model.gguf -c 2048 --host 0.0.0.0 --port 8080
-   ```
-
-2. Configure `work-facilitator`:
-   ```yaml
-   ai:
-     enabled: true
-     provider: "llamacpp"
-     base_url: "http://localhost:8080/v1"
-     model: "default"  # Optional
-     timeout: 90       # Increased timeout for local inference
-   ```
-
 #### Privacy & Security
 
 - **Data Sharing**: Git diffs are sent to external AI providers
@@ -214,7 +193,6 @@ Use a locally hosted llama.cpp server for privacy-focused, offline commit messag
 - `-a, --all-files`: Stage all modified files before commit
 - `-n, --no-push`: Commit without pushing to remote
 - `-f, --force-commit`: Force commit even if not in a workflow
-- `-s, --skip-precommit`: Skip pre-commit hooks
 - `-p, --provider <name>`: Override AI provider (openai, claude)
 - `--no-ai`: Skip AI generation and enter message manually
 - `-d, --dry-run`: Preview commit message without committing
@@ -291,4 +269,4 @@ Create work based on JIRA or Gitlab informations
 
 ### completion
 
-Generate completion for Linux / Mac systems
+Generate completion for Linux / Mac system
