@@ -43,8 +43,9 @@ ticketing:
 
 ai:
   enabled: False
-  provider: "openai" # Options: openai, claude, vertexai
+  provider: "openai" # Options: openai, claude, vertexai, llamacpp
   api_key: "$OPENAI_API_KEY" # Use $ENV_VAR to reference environment variables
+  base_url: "" # Optional: Base URL for custom providers (e.g., http://localhost:8080/v1 for llamacpp)
   model: "" # Leave empty for default (gpt-4 for openai, claude-3-5-sonnet-20241022 for claude, gemini-2.5-flash for vertexai)
             # For Vertex AI, you can specify a custom publisher using the format: "publisher/model"
             # Examples:

@@ -157,6 +157,8 @@ func generateAICommitMessage(diff string) string {
 		aiProvider = ai.NewOpenAIProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
 	case "claude":
 		aiProvider = ai.NewClaudeProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
+	case "llamacpp":
+		aiProvider = ai.NewLlamaCPPProvider(RootConfig.AIBaseURL, RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
 	case "vertexai":
 		var err error
 		aiProvider, err = ai.NewVertexAIProvider(
@@ -192,6 +194,10 @@ func generateAICommitMessage(diff string) string {
 	if RootConfig.EnforceStandard {
 		options.CommitStandard = RootConfig.CommitExpr
 	}
+
+	// Calculate and display prompt metrics
+	charCount, tokenEstimate := ai.GetPromptMetrics(diff, options)
+	fmt.Printf("Context size: %d chars (~%d tokens)\n", charCount, tokenEstimate)
 
 	// Generate message
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

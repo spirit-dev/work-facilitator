@@ -82,8 +82,9 @@ Add AI settings to your `~/.workflow.yaml`:
 ```yaml
 ai:
   enabled: true
-  provider: "openai"  # Options: openai, claude, vertexai
+  provider: "openai"  # Options: openai, claude, vertexai, llamacpp
   api_key: "$OPENAI_API_KEY"  # Use $ENV_VAR to reference environment variables
+  base_url: "" # Optional: Base URL for custom providers (e.g., http://localhost:8080/v1 for llamacpp)
   model: ""  # Leave empty for default (gpt-4 for openai, claude-3-5-sonnet-20241022 for claude, gemini-2.5-flash for vertexai)
   max_tokens: 1024
   temperature: 0.7
@@ -181,6 +182,25 @@ ai:
   max_tokens: 1024
   temperature: 0.7
 ```
+
+**LlamaCPP Setup (Local):**
+
+Use a locally hosted llama.cpp server for privacy-focused, offline commit message generation.
+
+1. Start your llama.cpp server with OpenAI-compatible API:
+   ```bash
+   ./server -m models/my-model.gguf -c 2048 --host 0.0.0.0 --port 8080
+   ```
+
+2. Configure `work-facilitator`:
+   ```yaml
+   ai:
+     enabled: true
+     provider: "llamacpp"
+     base_url: "http://localhost:8080/v1"
+     model: "default"  # Optional
+     timeout: 90       # Increased timeout for local inference
+   ```
 
 #### Privacy & Security
 
