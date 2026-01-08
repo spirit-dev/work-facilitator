@@ -49,6 +49,9 @@ type Config struct {
 	// Model to use (e.g., gpt-4, claude-3-5-sonnet-20241022)
 	Model string
 
+	// BaseURL for providers that support custom endpoints (e.g., llamacpp)
+	BaseURL string
+
 	// Enabled indicates if AI features are enabled
 	Enabled bool
 

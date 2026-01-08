@@ -34,6 +34,7 @@ ai:
   enabled: {{ facilitators.work.ai.enabled | default(False) | quote }}
   provider: {{ facilitators.work.ai.provider | default("openai") | quote }}
   api_key: {{ facilitators.work.ai.api_key | default("$OPENAI_API_KEY") | quote }}
+  base_url: {{ facilitators.work.ai.base_url | default("") | quote }}
   model: {{ facilitators.work.ai.model | default("") | quote }}
         # For Vertex AI, you can specify a custom publisher using the format: "publisher/model"
         # Examples:
