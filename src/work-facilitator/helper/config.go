@@ -107,6 +107,7 @@ func NewConfig() c.Config {
 		aiAPIKey = os.Getenv(envVar)
 	}
 	aiModel := viper.GetString("ai.model")
+	aiBaseURL := viper.GetString("ai.base_url")
 	aiMaxTokens := viper.GetInt("ai.max_tokens")
 	if aiMaxTokens == 0 {
 		aiMaxTokens = 1024 // Default max tokens
@@ -168,6 +169,7 @@ func NewConfig() c.Config {
 		AIProvider:                   aiProvider,
 		AIAPIKey:                     aiAPIKey,
 		AIModel:                      aiModel,
+		AIBaseURL:                    aiBaseURL,
 		AIMaxTokens:                  aiMaxTokens,
 		AITemperature:                aiTemperature,
 		AITimeout:                    aiTimeout,
