@@ -17,6 +17,7 @@ The project uses a `Makefile` for common operations. Always run tests before sub
   Outputs the binary to `dist/work-facilitator`.
 
 - **Run in Development Mode**:
+
   ```bash
   make run-dev CMD_OPT="<args>"
   # OR directly with go run
@@ -35,6 +36,7 @@ The project uses a `Makefile` for common operations. Always run tests before sub
 
 - **Run a Single Test**:
   To run a specific test function (e.g., `TestNewLlamaCPPProvider`):
+
   ```bash
   cd src/work-facilitator && go test -v -run TestNewLlamaCPPProvider ./path/to/package
   # Example:
@@ -54,6 +56,7 @@ The project uses a `Makefile` for common operations. Always run tests before sub
   Ensure your code passes these checks. If you must bypass them (rarely), use the `-s` flag with the commit command, but prefer fixing the issues.
 
 - **Dependency Management**:
+
   ```bash
   make packages
   # OR
@@ -67,6 +70,7 @@ The project uses a `Makefile` for common operations. Always run tests before sub
 - **Language**: Go 1.23+
 - **Module Name**: `spirit-dev/work-facilitator`
 - **Copyright**: All files must start with the copyright header:
+
   ```go
   /*
   Copyright © 2024 Jean Bordat bordat.jean@gmail.com
@@ -153,6 +157,7 @@ import (
 - Update `README.md` when adding new features or configuration options.
 - Use `//` for single-line comments.
 - Exported functions and types MUST have GoDoc-style comments.
+
   ```go
   // GenerateCommitMessage generates a commit message based on the provided diff.
   func (p *Provider) GenerateCommitMessage(...)
