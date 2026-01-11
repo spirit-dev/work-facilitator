@@ -8,6 +8,7 @@ import (
 	"spirit-dev/work-facilitator/work-facilitator/common"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -39,4 +40,8 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().String("profile", "", "config profile to use (e.g. 'test' for .workflow.test.yaml)")
+	if err := viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile")); err != nil {
+		panic(err)
+	}
 }
