@@ -213,8 +213,16 @@ func initLogging(logLvl string) {
 }
 
 func initConfig() {
-	viper.SetConfigName(".workflow") // name of config file (without extension)
-	viper.SetConfigType("yaml")      // REQUIRED if the config file does not have the extension in the name
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("wf") // will be uppercased automatically
+
+	profile := viper.GetString("profile")
+	if profile != "" {
+		viper.SetConfigName(".workflow." + profile)
+	} else {
+		viper.SetConfigName(".workflow") // name of config file (without extension)
+	}
+	viper.SetConfigType("yaml") // REQUIRED if the config file does not have the extension in the name
 	// Search config in home directory with name ".cobra" (without extension).
 	viper.AddConfigPath(homeDir()) // TODO re-enable the home dir as a first place to look at
 	// viper.AddConfigPath("/home/jbordat/Documents/projects/perso/work-facilitator/config") // path to look for the config file in
@@ -223,9 +231,6 @@ func initConfig() {
 	if err1 != nil {             // Handle errors reading the config file
 		log.Fatalln("fatal error config file: %w", err1)
 	}
-
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("wf") // will be uppercased automatically
 }
 
 func homeDir() string {
