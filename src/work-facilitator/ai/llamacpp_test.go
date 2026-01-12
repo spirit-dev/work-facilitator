@@ -296,7 +296,7 @@ func TestLlamaCPPProvider_GenerateCommitMessage_Timeout(t *testing.T) {
 	// However, GenerateCommitMessage doesn't enforce timeout on the context passed to it,
 	// it relies on the caller to pass a context with timeout OR the http client timeout.
 	// In our implementation: client := &http.Client{Timeout: p.timeout}
-	
+
 	_, err := provider.GenerateCommitMessage(ctx, "test diff", &GenerateOptions{})
 	if err == nil {
 		t.Fatal("Expected timeout error, got nil")
