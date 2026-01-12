@@ -4,10 +4,13 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package ai
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+const dummyPrivateKey = "-----BEGIN PRIVATE KEY-----\nDUMMY\n-----END PRIVATE KEY-----\n" // pragma: allowlist secret
 
 func TestParseModelString(t *testing.T) {
 	tests := []struct {
@@ -79,18 +82,18 @@ func TestNewVertexAIProvider(t *testing.T) {
 	tmpDir := t.TempDir()
 	keyPath := filepath.Join(tmpDir, "test-key.json")
 
-	keyContent := `{
+	keyContent := fmt.Sprintf(`{
 		"type": "service_account",
 		"project_id": "test-project",
 		"private_key_id": "",
-		"private_key": "",
+		"private_key": "%s",
 		"client_email": "test@test-project.iam.gserviceaccount.com",
 		"client_id": "123456789",
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`
+	}`, dummyPrivateKey)
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
@@ -181,18 +184,18 @@ func TestNewVertexAIProviderParsing(t *testing.T) {
 	tmpDir := t.TempDir()
 	keyPath := filepath.Join(tmpDir, "test-key.json")
 
-	keyContent := `{
+	keyContent := fmt.Sprintf(`{
 		"type": "service_account",
 		"project_id": "test-project",
 		"private_key_id": "",
-		"private_key": "",
+		"private_key": "%s",
 		"client_email": "test@test-project.iam.gserviceaccount.com",
 		"client_id": "123456789",
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`
+	}`, dummyPrivateKey)
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
@@ -251,18 +254,18 @@ func TestVertexAIProviderValidate(t *testing.T) {
 	tmpDir := t.TempDir()
 	keyPath := filepath.Join(tmpDir, "test-key.json")
 
-	keyContent := `{
+	keyContent := fmt.Sprintf(`{
 		"type": "service_account",
 		"project_id": "test-project",
 		"private_key_id": "test-key-id",
-		"private_key": "",
+		"private_key": "%s",
 		"client_email": "test@test-project.iam.gserviceaccount.com",
 		"client_id": "123456789",
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`
+	}`, dummyPrivateKey)
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
@@ -341,18 +344,18 @@ func TestVertexAIProviderValidatePublisher(t *testing.T) {
 	tmpDir := t.TempDir()
 	keyPath := filepath.Join(tmpDir, "test-key.json")
 
-	keyContent := `{
+	keyContent := fmt.Sprintf(`{
 		"type": "service_account",
 		"project_id": "test-project",
 		"private_key_id": "test-key-id",
-		"private_key": "",
+		"private_key": "%s",
 		"client_email": "test@test-project.iam.gserviceaccount.com",
 		"client_id": "123456789",
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`
+	}`, dummyPrivateKey)
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
@@ -499,13 +502,13 @@ func TestBuildEndpoint(t *testing.T) {
 func TestLoadServiceAccountKey(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	validKeyContent := `{
+	validKeyContent := fmt.Sprintf(`{
 		"type": "service_account",
 		"project_id": "test-project",
 		"private_key_id": "",
-		"private_key": "",
+		"private_key": "%s",
 		"client_email": "test@test-project.iam.gserviceaccount.com"
-	}`
+	}`, dummyPrivateKey)
 
 	validKeyPath := filepath.Join(tmpDir, "valid-key.json")
 	if err := os.WriteFile(validKeyPath, []byte(validKeyContent), 0600); err != nil {
