@@ -57,7 +57,8 @@ Also, it takes the standards in consideration
 
 Commit current changes properly prefixed
 
-**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured). It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted. Use `-s` or `--skip-precommit` to bypass these checks.
+**Pre-commit Hooks**: The `commit` command automatically executes git pre-commit hooks (if configured).
+It supports both standard git hooks (`.git/hooks/pre-commit`) and the `pre-commit` framework (via `git hook run`). If hooks fail, the commit is aborted. Use `-s` or `--skip-precommit` to bypass these checks.
 
 ### ai-commit
 
@@ -188,11 +189,13 @@ ai:
 Use a locally hosted llama.cpp server for privacy-focused, offline commit message generation.
 
 1. Start your llama.cpp server with OpenAI-compatible API:
+
    ```bash
    ./server -m models/my-model.gguf -c 2048 --host 0.0.0.0 --port 8080
    ```
 
 2. Configure `work-facilitator`:
+
    ```yaml
    ai:
      enabled: true
