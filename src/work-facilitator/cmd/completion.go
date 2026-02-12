@@ -108,6 +108,7 @@ func completionRunCommand(cmd *cobra.Command, args []string) {
 		"# Alias definition",
 		"alias wf='work-facilitator'",
 		"alias wfc='work-facilitator commit'",
+		"alias wfcai='work-facilitator ai-commit'",
 		"alias wfe='work-facilitator end'",
 		"alias wfi='work-facilitator init'",
 		"alias wfil='work-facilitator initLazy'",
