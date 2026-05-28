@@ -129,7 +129,7 @@ func initLazyPreRunCommand(cmd *cobra.Command, args []string) {
 
 	// Set default ref branch
 	if refBranchInitLArg == c.NOTGIVENBRANCH {
-		refBranchInitLArg = RootConfig.DefaultBranch
+		refBranchInitLArg = RootRepo.DefaultBranch
 	}
 
 	// Ensure standard is correct (if enforced)
