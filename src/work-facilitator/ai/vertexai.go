@@ -6,10 +6,7 @@ package ai
 import (
 	"bytes"
 	"context"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,8 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -34,25 +32,12 @@ type VertexAIProvider struct {
 	location          string
 	publisher         string // Publisher for the model (e.g., "google", "google-anthropic-claude")
 	model             string // Model name (e.g., "gemini-2.5-flash", "claude-sonnet-4.5-20250517")
-	serviceAccountKey *ServiceAccountKey
+	tokenSource       oauth2.TokenSource
 	timeout           time.Duration
-	cachedToken       string
-	tokenExpiry       time.Time
+
 }
 
-// ServiceAccountKey represents a Google Cloud service account key
-type ServiceAccountKey struct {
-	Type                    string `json:"type"`
-	ProjectID               string `json:"project_id"`
-	PrivateKeyID            string `json:"private_key_id"`
-	PrivateKey              string `json:"private_key"`
-	ClientEmail             string `json:"client_email"`
-	ClientID                string `json:"client_id"`
-	AuthURI                 string `json:"auth_uri"`
-	TokenURI                string `json:"token_uri"`
-	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url"`
-	ClientX509CertURL       string `json:"client_x509_cert_url"`
-}
+
 
 // ParseModelString parses a model string into publisher and model components.
 // The model string can be in one of two formats:
@@ -96,15 +81,22 @@ func NewVertexAIProvider(projectID, location, serviceAccountKeyPath, model strin
 	publisher, parsedModel := ParseModelString(model)
 	log.Debugln("Vertex AI provider initialized with publisher:", publisher, "model:", parsedModel)
 
-	// Load service account key
-	key, err := loadServiceAccountKey(serviceAccountKeyPath)
+	// Read credentials file
+	jsonData, err := os.ReadFile(serviceAccountKeyPath)
 	if err != nil {
-		return nil, NewProviderError("vertexai", "failed to load service account key", err)
+		return nil, NewProviderError("vertexai", "failed to read credentials file", err)
 	}
 
-	// Use project ID from key if not provided
+	// Load Google credentials
+	ctx := context.Background()
+	creds, err := google.CredentialsFromJSON(ctx, jsonData, vertexAIScope)
+	if err != nil {
+		return nil, NewProviderError("vertexai", "failed to load Google credentials", err)
+	}
+
+	// Use project ID from credentials if not provided
 	if projectID == "" {
-		projectID = key.ProjectID
+		projectID = creds.ProjectID
 	}
 
 	return &VertexAIProvider{
@@ -112,7 +104,7 @@ func NewVertexAIProvider(projectID, location, serviceAccountKeyPath, model strin
 		location:          location,
 		publisher:         publisher,
 		model:             parsedModel,
-		serviceAccountKey: key,
+		tokenSource:       creds.TokenSource,
 		timeout:           timeout,
 	}, nil
 }
@@ -133,11 +125,8 @@ func (p *VertexAIProvider) Validate() error {
 	if p.publisher == "" {
 		return NewProviderError(p.Name(), "publisher is required", nil)
 	}
-	if p.serviceAccountKey == nil { // pragma: allowlist secret
-		return NewProviderError(p.Name(), "service account key is required", nil)
-	}
-	if p.serviceAccountKey.PrivateKey == "" {
-		return NewProviderError(p.Name(), "service account private key is missing", nil)
+	if p.tokenSource == nil {
+		return NewProviderError(p.Name(), "token source is required", nil)
 	}
 
 	// Validate location
@@ -163,7 +152,7 @@ func (p *VertexAIProvider) GenerateCommitMessage(ctx context.Context, diff strin
 	}
 
 	// Get access token
-	token, err := p.getAccessToken()
+	token, err := p.tokenSource.Token()
 	if err != nil {
 		return "", NewProviderError(p.Name(), "failed to get access token", err)
 	}
@@ -203,7 +192,7 @@ func (p *VertexAIProvider) GenerateCommitMessage(ctx context.Context, diff strin
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
 	client := &http.Client{Timeout: p.timeout}
 	resp, err := client.Do(req)
@@ -253,128 +242,6 @@ func (p *VertexAIProvider) buildEndpoint() string {
 	}
 	return fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/%s/models/%s:generateContent",
 		p.location, p.projectID, p.location, p.publisher, p.model)
-}
-
-// getAccessToken gets or refreshes the OAuth2 access token
-func (p *VertexAIProvider) getAccessToken() (string, error) {
-	// Check if we have a cached token that's still valid
-	if p.cachedToken != "" && time.Now().Before(p.tokenExpiry) {
-		log.Debugln("Using cached Vertex AI access token")
-		return p.cachedToken, nil
-	}
-
-	log.Debugln("Generating new Vertex AI access token")
-
-	// Create JWT
-	now := time.Now()
-	claims := jwt.MapClaims{
-		"iss":   p.serviceAccountKey.ClientEmail,
-		"sub":   p.serviceAccountKey.ClientEmail,
-		"aud":   vertexAITokenURL,
-		"iat":   now.Unix(),
-		"exp":   now.Add(time.Hour).Unix(),
-		"scope": vertexAIScope,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-
-	// Parse private key
-	privateKey, err := parsePrivateKey(p.serviceAccountKey.PrivateKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse private key: %w", err)
-	}
-
-	// Sign JWT
-	signedToken, err := token.SignedString(privateKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to sign JWT: %w", err)
-	}
-
-	// Exchange JWT for access token
-	reqBody := fmt.Sprintf("grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=%s", signedToken)
-	resp, err := http.Post(vertexAITokenURL, "application/x-www-form-urlencoded", strings.NewReader(reqBody))
-	if err != nil {
-		return "", fmt.Errorf("failed to exchange JWT for token: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("token exchange failed (%d): %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-		ExpiresIn   int    `json:"expires_in"`
-		TokenType   string `json:"token_type"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", fmt.Errorf("failed to decode token response: %w", err)
-	}
-
-	// Cache the token
-	p.cachedToken = tokenResp.AccessToken
-	p.tokenExpiry = now.Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second) // Refresh 60s before expiry
-
-	return p.cachedToken, nil
-}
-
-// loadServiceAccountKey loads a service account key from a file
-func loadServiceAccountKey(path string) (*ServiceAccountKey, error) {
-	// Support environment variable expansion
-	if strings.HasPrefix(path, "$") {
-		envVar := strings.TrimPrefix(path, "$")
-		path = os.Getenv(envVar)
-		if path == "" {
-			return nil, fmt.Errorf("environment variable %s is not set", envVar)
-		}
-	}
-
-	// Expand home directory
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get home directory: %w", err)
-		}
-		path = strings.Replace(path, "~", home, 1)
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read service account key file: %w", err)
-	}
-
-	var key ServiceAccountKey
-	if err := json.Unmarshal(data, &key); err != nil {
-		return nil, fmt.Errorf("failed to parse service account key: %w", err)
-	}
-
-	return &key, nil
-}
-
-// parsePrivateKey parses a PEM-encoded RSA private key
-func parsePrivateKey(pemKey string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(pemKey))
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM block")
-	}
-
-	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		// Try PKCS1 format
-		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
-		}
-	}
-
-	rsaKey, ok := key.(*rsa.PrivateKey)
-	if !ok {
-		return nil, fmt.Errorf("private key is not RSA")
-	}
-
-	return rsaKey, nil
 }
 
 // Vertex AI API request/response structures
