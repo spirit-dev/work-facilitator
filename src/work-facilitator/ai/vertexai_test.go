@@ -4,10 +4,13 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package ai
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"golang.org/x/oauth2/google"
 )
 
 const dummyPrivateKey = "-----BEGIN PRIVATE KEY-----\nDUMMY\n-----END PRIVATE KEY-----\n" // pragma: allowlist secret
@@ -99,6 +102,22 @@ func TestNewVertexAIProvider(t *testing.T) {
 		t.Fatalf("Failed to create test key file: %v", err)
 	}
 
+	impersonatedKeyPath := filepath.Join(tmpDir, "impersonated-key.json")
+	impersonatedKeyContent := \`{
+		"type": "impersonated_service_account",
+		"service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@test-project.iam.gserviceaccount.com:generateAccessToken",
+		"source_credentials": {
+			"client_id": "123456789",
+			"client_secret": "secret",
+			"refresh_token": "refresh",
+			"type": "authorized_user"
+		}
+	}`
+	if err := os.WriteFile(impersonatedKeyPath, []byte(impersonatedKeyContent), 0600); err != nil {
+		t.Fatalf("Failed to create impersonated test key file: %v", err)
+	}
+
+
 	tests := []struct {
 		name          string
 		projectID     string
@@ -140,6 +159,16 @@ func TestNewVertexAIProvider(t *testing.T) {
 			location:      "us-central1",
 			keyPath:       keyPath,
 			model:         "",
+			wantErr:       false,
+			wantProjectID: "my-project",
+		},
+
+		{
+			name:          "Impersonated service account",
+			projectID:     "my-project",
+			location:      "us-central1",
+			keyPath:       impersonatedKeyPath,
+			model:         "gemini-2.5-flash",
 			wantErr:       false,
 			wantProjectID: "my-project",
 		},
@@ -361,9 +390,14 @@ func TestVertexAIProviderValidatePublisher(t *testing.T) {
 		t.Fatalf("Failed to create test key file: %v", err)
 	}
 
-	key, err := loadServiceAccountKey(keyPath)
+	ctx := context.Background()
+	jsonData, err := os.ReadFile(keyPath)
 	if err != nil {
-		t.Fatalf("Failed to load service account key: %v", err)
+		t.Fatalf("Failed to read key file: %v", err)
+	}
+	creds, err := google.CredentialsFromJSON(ctx, jsonData, vertexAIScope)
+	if err != nil {
+		t.Fatalf("Failed to load credentials: %v", err)
 	}
 
 	tests := []struct {
@@ -402,7 +436,7 @@ func TestVertexAIProviderValidatePublisher(t *testing.T) {
 				location:          "us-central1",
 				publisher:         tt.publisher,
 				model:             "test-model",
-				serviceAccountKey: key,
+				tokenSource:       creds.TokenSource,
 			}
 
 			err := provider.Validate()
@@ -494,70 +528,6 @@ func TestBuildEndpoint(t *testing.T) {
 			got := provider.buildEndpoint()
 			if got != tt.want {
 				t.Errorf("buildEndpoint() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestLoadServiceAccountKey(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	validKeyContent := fmt.Sprintf(`{
-		"type": "service_account",
-		"project_id": "test-project",
-		"private_key_id": "",
-		"private_key": "%s",
-		"client_email": "test@test-project.iam.gserviceaccount.com"
-	}`, dummyPrivateKey)
-
-	validKeyPath := filepath.Join(tmpDir, "valid-key.json")
-	if err := os.WriteFile(validKeyPath, []byte(validKeyContent), 0600); err != nil {
-		t.Fatalf("Failed to create test key file: %v", err)
-	}
-
-	tests := []struct {
-		name    string
-		path    string
-		wantErr bool
-	}{
-		{
-			name:    "Valid key file",
-			path:    validKeyPath,
-			wantErr: false,
-		},
-		{
-			name:    "Nonexistent file",
-			path:    "/nonexistent/path.json",
-			wantErr: true,
-		},
-		{
-			name:    "Invalid JSON",
-			path:    filepath.Join(tmpDir, "invalid.json"),
-			wantErr: true,
-		},
-	}
-
-	// Create invalid JSON file
-	invalidPath := filepath.Join(tmpDir, "invalid.json")
-	if err := os.WriteFile(invalidPath, []byte("not json"), 0600); err != nil {
-		t.Fatalf("Failed to create invalid test file: %v", err)
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			key, err := loadServiceAccountKey(tt.path)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("loadServiceAccountKey() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !tt.wantErr && key == nil {
-				t.Error("Expected key to be non-nil")
-			}
-
-			if !tt.wantErr && key.ProjectID != "test-project" {
-				t.Errorf("Expected project ID 'test-project', got '%s'", key.ProjectID)
 			}
 		})
 	}
