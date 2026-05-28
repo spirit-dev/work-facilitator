@@ -7,7 +7,6 @@ toolchain go1.23.10
 require (
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/go-git/go-git/v5 v5.16.2
-	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pterm/pterm v0.12.81
 	github.com/sirupsen/logrus v1.9.3
@@ -16,12 +15,14 @@ require (
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/whilp/git-urls v1.0.0
 	github.com/xanzy/go-gitlab v0.115.0
+	golang.org/x/oauth2 v0.25.0
 )
 
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.1.0 // indirect
+	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
@@ -65,7 +66,6 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
