@@ -38,3 +38,4 @@ dist/*
 !dist/.gitkeep
 
 __debug_bin*
+src/work-facilitator/work-facilitator
