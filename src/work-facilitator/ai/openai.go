@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
+var (
 	openAIAPIURL       = "https://api.openai.com/v1/chat/completions"
 	defaultOpenAIModel = "gpt-4"
 )
@@ -91,18 +91,18 @@ func (p *OpenAIProvider) GenerateCommitMessage(ctx context.Context, diff string,
 
 	log.Debugln("OpenAI request payload size:", len(jsonData))
 
-	req, err := http.NewRequestWithContext(ctx, "POST", openAIAPIURL, bytes.NewBuffer(jsonData))
+	resp, err := retryWithBackoff(ctx, p.Name(), func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, "POST", openAIAPIURL, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+p.apiKey)
+		client := &http.Client{Timeout: p.timeout}
+		return client.Do(req)
+	})
 	if err != nil {
-		return "", NewProviderError(p.Name(), "failed to create request", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.apiKey)
-
-	client := &http.Client{Timeout: p.timeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", NewProviderError(p.Name(), "API request failed", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
