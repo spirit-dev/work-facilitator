@@ -96,27 +96,25 @@ func (p *LlamaCPPProvider) GenerateCommitMessage(ctx context.Context, diff strin
 		return "", NewProviderError("llamacpp", "failed to marshal request", err)
 	}
 
-	// Create HTTP request
+	// Send request with retry
 	endpoint := fmt.Sprintf("%s/chat/completions", p.baseURL)
-	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", NewProviderError("llamacpp", "failed to create request", err)
-	}
-
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	if p.apiKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", p.apiKey))
-	}
-
-	// Send request
-	client := &http.Client{Timeout: p.timeout}
-	resp, err := client.Do(req)
+	resp, err := retryWithBackoff(ctx, p.Name(), func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if p.apiKey != "" {
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", p.apiKey))
+		}
+		client := &http.Client{Timeout: p.timeout}
+		return client.Do(req)
+	})
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
 			return "", NewProviderError("llamacpp", "connection refused - is the llama.cpp server running?", err)
 		}
-		return "", NewProviderError("llamacpp", "request failed", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
