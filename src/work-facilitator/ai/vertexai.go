@@ -151,12 +151,6 @@ func (p *VertexAIProvider) GenerateCommitMessage(ctx context.Context, diff strin
 		return "", err
 	}
 
-	// Get access token
-	token, err := p.tokenSource.Token()
-	if err != nil {
-		return "", NewProviderError(p.Name(), "failed to get access token", err)
-	}
-
 	prompt := buildPrompt(diff, options)
 
 	// Build Vertex AI request
@@ -186,18 +180,24 @@ func (p *VertexAIProvider) GenerateCommitMessage(ctx context.Context, diff strin
 	endpoint := p.buildEndpoint()
 	log.Debugln("Vertex AI endpoint:", endpoint)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", NewProviderError(p.Name(), "failed to create request", err)
-	}
+	resp, err := retryWithBackoff(ctx, p.Name(), func() (*http.Response, error) {
+		// Get fresh access token on each attempt (tokens may expire between retries)
+		token, err := p.tokenSource.Token()
+		if err != nil {
+			return nil, NewProviderError(p.Name(), "failed to get access token", err)
+		}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-
-	client := &http.Client{Timeout: p.timeout}
-	resp, err := client.Do(req)
+		req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+		client := &http.Client{Timeout: p.timeout}
+		return client.Do(req)
+	})
 	if err != nil {
-		return "", NewProviderError(p.Name(), "API request failed", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
