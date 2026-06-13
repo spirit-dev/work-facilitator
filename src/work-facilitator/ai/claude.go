@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
+var (
 	claudeAPIURL       = "https://api.anthropic.com/v1/messages"
 	defaultClaudeModel = "claude-sonnet-4-5@20250929"
 	claudeAPIVersion   = "2023-06-01"
@@ -93,19 +93,19 @@ func (p *ClaudeProvider) GenerateCommitMessage(ctx context.Context, diff string,
 
 	log.Debugln("Claude request payload size:", len(jsonData))
 
-	req, err := http.NewRequestWithContext(ctx, "POST", claudeAPIURL, bytes.NewBuffer(jsonData))
+	resp, err := retryWithBackoff(ctx, p.Name(), func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, "POST", claudeAPIURL, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", p.apiKey)
+		req.Header.Set("anthropic-version", claudeAPIVersion)
+		client := &http.Client{Timeout: p.timeout}
+		return client.Do(req)
+	})
 	if err != nil {
-		return "", NewProviderError(p.Name(), "failed to create request", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", p.apiKey)
-	req.Header.Set("anthropic-version", claudeAPIVersion)
-
-	client := &http.Client{Timeout: p.timeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", NewProviderError(p.Name(), "API request failed", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
