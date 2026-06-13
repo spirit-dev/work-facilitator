@@ -25,6 +25,7 @@ var (
 	allFilesAICommitArg      bool
 	forceAICommitArg         bool
 	skipPreCommitAICommitArg bool
+	includeUnstagedAICommitArg bool
 
 	// local variables
 	commitMessageAICommit string
@@ -80,12 +81,18 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 		helper.SpinStopDisplay("success")
 	}
 
-	// Get staged diff
+	// Get diff: staged only (index blobs) by default, or working tree with -U flag
 	helper.SpinStartDisplay("Analyzing staged changes")
-	diff, err := helper.GetStagedDiff()
-	if err != nil {
+	var diff string
+	var diffErr error
+	if includeUnstagedAICommitArg {
+		diff, diffErr = helper.GetWorkingTreeDiff()
+	} else {
+		diff, diffErr = helper.GetStagedDiff()
+	}
+	if diffErr != nil {
 		helper.SpinStopDisplay("fail")
-		log.Fatalln("Failed to get staged diff:", err)
+		log.Fatalln("Failed to get staged diff:", diffErr)
 	}
 
 	// Filter diff by exclude patterns
@@ -102,11 +109,29 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Generate commit message with AI
-	commitMessageAICommit = generateAICommitMessage(diff)
+	// Create AI provider once (shared for initial generation and potential regeneration)
+	timeout := time.Duration(RootConfig.AITimeout) * time.Second
+	aiProvider := createAIProvider(timeout)
 
-	// Interactive review
-	finalMessage := reviewAndEditMessage(commitMessageAICommit)
+	// Prepare generation options
+	options := &ai.GenerateOptions{
+		MaxTokens:   RootConfig.AIMaxTokens,
+		Temperature: RootConfig.AITemperature,
+		BranchName:  RootRepo.CurrentWorkflowData.Branch,
+	}
+	if RootConfig.EnforceStandard {
+		options.CommitStandard = RootConfig.CommitExpr
+	}
+
+	// Generate initial commit message
+	helper.SpinStartDisplay("Generating commit message with AI")
+	charCount, tokenEstimate := ai.GetPromptMetrics(diff, options)
+	fmt.Printf("Model: %s | Context size: %d chars (~%d tokens)\n", RootConfig.AIModel, charCount, tokenEstimate)
+	commitMessageAICommit = doGenerateMessage(aiProvider, diff, options, timeout)
+	helper.SpinStopDisplay("success")
+
+	// Interactive review with regeneration support
+	finalMessage := reviewAndEditMessage(commitMessageAICommit, aiProvider, diff, options, timeout)
 
 	// Validate against commit standard if enforced
 	if RootConfig.EnforceStandard {
@@ -145,23 +170,17 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 	helper.ByeByeDisplay()
 }
 
-func generateAICommitMessage(diff string) string {
-	helper.SpinStartDisplay("Generating commit message with AI")
-
-	// Create AI provider
-	var aiProvider ai.Provider
-	timeout := time.Duration(RootConfig.AITimeout) * time.Second
-
+// createAIProvider creates the configured AI provider from RootConfig.
+func createAIProvider(timeout time.Duration) ai.Provider {
 	switch RootConfig.AIProvider {
 	case "openai":
-		aiProvider = ai.NewOpenAIProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
+		return ai.NewOpenAIProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
 	case "claude":
-		aiProvider = ai.NewClaudeProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
+		return ai.NewClaudeProvider(RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
 	case "llamacpp":
-		aiProvider = ai.NewLlamaCPPProvider(RootConfig.AIBaseURL, RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
+		return ai.NewLlamaCPPProvider(RootConfig.AIBaseURL, RootConfig.AIAPIKey, RootConfig.AIModel, timeout)
 	case "vertexai":
-		var err error
-		aiProvider, err = ai.NewVertexAIProvider(
+		provider, err := ai.NewVertexAIProvider(
 			RootConfig.AIGoogleProjectID,
 			RootConfig.AIGoogleLocation,
 			RootConfig.AIGoogleServiceAccountKey,
@@ -169,59 +188,71 @@ func generateAICommitMessage(diff string) string {
 			timeout,
 		)
 		if err != nil {
-			helper.SpinStopDisplay("fail")
 			log.Fatalln("Failed to create Vertex AI provider:", err)
 		}
+		return provider
 	default:
-		helper.SpinStopDisplay("fail")
 		log.Fatalln("Unknown AI provider:", RootConfig.AIProvider)
+		return nil
 	}
+}
 
+// doGenerateMessage calls the AI provider to generate a commit message.
+// Falls back to manual entry on failure.
+func doGenerateMessage(provider ai.Provider, diff string, options *ai.GenerateOptions, timeout time.Duration) string {
 	// Validate provider
-	if err := aiProvider.Validate(); err != nil {
-		helper.SpinStopDisplay("fail")
-		log.Fatalln("AI provider validation failed:", err)
+	if err := provider.Validate(); err != nil {
+		log.Warningln("AI provider validation failed:", err)
+		log.Warningln("Falling back to manual message entry")
+		return promptForMessage()
 	}
 
-	// Prepare generation options
-	options := &ai.GenerateOptions{
-		MaxTokens:   RootConfig.AIMaxTokens,
-		Temperature: RootConfig.AITemperature,
-		BranchName:  RootRepo.CurrentWorkflowData.Branch,
-	}
-
-	// Add commit standard to options if enforced
-	if RootConfig.EnforceStandard {
-		options.CommitStandard = RootConfig.CommitExpr
-	}
-
-	// Calculate and display prompt metrics
-	charCount, tokenEstimate := ai.GetPromptMetrics(diff, options)
-	fmt.Printf("Context size: %d chars (~%d tokens)\n", charCount, tokenEstimate)
-
-	// Generate message
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	message, err := aiProvider.GenerateCommitMessage(ctx, diff, options)
+	message, err := provider.GenerateCommitMessage(ctx, diff, options)
 	if err != nil {
-		helper.SpinStopDisplay("fail")
 		log.Warningln("AI generation failed:", err)
 		log.Warningln("Falling back to manual message entry")
 		return promptForMessage()
 	}
 
+	return message
+}
+
+// generateAICommitMessage is kept for backward compatibility (initial generation only).
+func generateAICommitMessage(diff string) string {
+	helper.SpinStartDisplay("Generating commit message with AI")
+
+	timeout := time.Duration(RootConfig.AITimeout) * time.Second
+	aiProvider := createAIProvider(timeout)
+
+	options := &ai.GenerateOptions{
+		MaxTokens:   RootConfig.AIMaxTokens,
+		Temperature: RootConfig.AITemperature,
+		BranchName:  RootRepo.CurrentWorkflowData.Branch,
+	}
+	if RootConfig.EnforceStandard {
+		options.CommitStandard = RootConfig.CommitExpr
+	}
+
+	charCount, tokenEstimate := ai.GetPromptMetrics(diff, options)
+	fmt.Printf("Model: %s | Context size: %d chars (~%d tokens)\n", RootConfig.AIModel, charCount, tokenEstimate)
+
+	message := doGenerateMessage(aiProvider, diff, options, timeout)
 	helper.SpinStopDisplay("success")
 	return message
 }
 
-func reviewAndEditMessage(message string) string {
-	fmt.Println("=== AI Generated Commit Message ===")
-	fmt.Println(message)
-	fmt.Println("===================================")
+func reviewAndEditMessage(initialMessage string, provider ai.Provider, diff string, options *ai.GenerateOptions, timeout time.Duration) string {
+	message := initialMessage
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
+		fmt.Println("=== AI Generated Commit Message ===")
+		fmt.Println(message)
+		fmt.Println("===================================")
+
 		fmt.Print("Options: [A]ccept, [E]dit, [R]egenerate, [C]ancel? ")
 		choice, _ := reader.ReadString('\n')
 		choice = strings.TrimSpace(strings.ToLower(choice))
@@ -232,8 +263,13 @@ func reviewAndEditMessage(message string) string {
 		case "e", "edit":
 			return editMessage(message)
 		case "r", "regenerate":
-			log.Warningln("Regenerate not yet implemented, please edit manually")
-			return editMessage(message)
+			helper.SpinStartDisplay("Regenerating commit message")
+			newMsg := doGenerateMessage(provider, diff, options, timeout)
+			helper.SpinStopDisplay("success")
+			if newMsg != "" {
+				message = newMsg
+			}
+			// Loop continues with new message displayed
 		case "c", "cancel":
 			log.Fatalln("Commit cancelled by user")
 		default:
@@ -294,6 +330,7 @@ func init() {
 	aiCommitCmd.Flags().BoolVarP(&allFilesAICommitArg, "all-files", "a", false, "Stage all modified files before commit")
 	aiCommitCmd.Flags().BoolVarP(&forceAICommitArg, "force-commit", "f", false, "Force the commit if we are not in a workflow")
 	aiCommitCmd.Flags().BoolVarP(&skipPreCommitAICommitArg, "skip-precommit", "s", false, "Skip pre-commit hooks")
+	aiCommitCmd.Flags().BoolVarP(&includeUnstagedAICommitArg, "include-unstaged", "U", false, "Include working-tree modifications for staged files in the diff")
 
 	aiCommitCmd.Flags().SortFlags = false
 }

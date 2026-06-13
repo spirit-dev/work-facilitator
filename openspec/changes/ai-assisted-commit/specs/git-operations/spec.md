@@ -54,6 +54,49 @@ This specification defines the requirements for AI-assisted commit functionality
 6. Developer enters message manually
 7. System proceeds with normal commit workflow
 
+### Requirement: Staged-Only Diff Guarantee
+
+**User Story:** As a developer, I want the AI to generate commit messages based ONLY on my staged changes, so that unstaged modifications never produce misleading commit messages.
+
+#### Acceptance Criteria
+
+1. WHEN user runs `work-facilitator ai-commit` THEN system SHALL read staged file content from git index blobs (not working tree)
+2. WHEN a file has both staged and unstaged modifications THEN system SHALL send only the staged version to the AI
+3. WHEN `-U` / `--include-unstaged` flag is provided THEN system SHALL read working-tree content for staged files instead of index blobs
+4. WHEN `-U` flag is provided THEN system SHALL still only include files that have staged entries in the index
+5. WHEN unstaged changes exist on files NOT in the index THEN system SHALL exclude those files regardless of the `-U` flag
+6. WHEN diff is generated THEN system SHALL produce proper unified diff format with context lines and `@@` hunk headers
+7. WHEN untracked files exist THEN system SHALL exclude them from the diff (unless staged via `--all-files`)
+
+#### Scenario: Unstaged Changes Do Not Leak
+
+1. Developer edits `main.go` and stages with `git add main.go`
+2. Developer edits `main.go` again (second change, unstaged)
+3. Developer runs `work-facilitator ai-commit`
+4. System reads staged blob for `main.go` from git object store (not working directory)
+5. System sends diff containing only the staged change to the AI
+6. AI generates message based only on the staged change
+7. The unstaged modification is NOT reflected in the commit message
+
+#### Scenario: Include Unstaged with -U Flag
+
+1. Developer edits `main.go` and stages with `git add main.go`
+2. Developer edits `main.go` again (second change, unstaged)
+3. Developer also edits `utils.go` without staging it
+4. Developer runs `work-facilitator ai-commit -U`
+5. System reads working-tree content for `main.go` (includes unstaged changes)
+6. System does NOT include `utils.go` in the diff (not staged)
+7. AI generates message based on full `main.go` changes, no `utils.go` context
+
+#### Scenario: Multiple Files, Partial Staging
+
+1. Developer stages `api.go` and `model.go` (both have staged-only changes)
+2. Developer has unstaged modifications on `config.go` (not staged at all)
+3. Developer runs `work-facilitator ai-commit`
+4. System generates diff for `api.go` and `model.go` from index blobs
+5. System excludes `config.go` entirely
+6. AI generates message based on `api.go` and `model.go` only
+
 ### Requirement: Multi-Provider Support
 
 **User Story:** As a developer, I want to choose between different AI providers (OpenAI, Claude, etc.), so that I can use my preferred service or switch if one is unavailable.
