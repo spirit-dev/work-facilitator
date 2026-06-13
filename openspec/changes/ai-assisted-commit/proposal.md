@@ -8,7 +8,9 @@ This feature is a dedicated command that execute a commit, assisted by an AI ass
 
 A new `ai-commit` command will be added to work-facilitator that leverages AI assistants (OpenAI, Claude, Google Vertex AI, or others) to:
 
-- Analyze staged changes in the git repository
+- Analyze **only** staged changes in the git repository (HEAD → index), ensuring unstaged modifications never leak into the AI context
+- Support `-U` / `--include-unstaged` flag to optionally include working-tree modifications for staged files when broader context is desired
+- Generate proper unified diffs with context lines and hunk headers (not naive line-by-line comparisons)
 - Generate contextual, meaningful commit messages based on the diff
 - Allow user review and editing of the AI-generated message before committing
 - Support multiple AI providers with configurable API keys
@@ -48,7 +50,9 @@ This extends the current `commit` command functionality by adding intelligent co
      - `ai_google_service_account_key`: Path to service account key (Vertex AI)
 
 4. **Workflow**
-   - Analyze `git diff --staged` to get changes
+   - Analyze staged changes only: compare HEAD tree with git index blobs (not working directory)
+   - With `-U` / `--include-unstaged`: read working-tree version for staged files instead, providing full current state as context
+   - Produce proper unified diff format with context lines and `@@` hunk headers
    - Send diff to AI provider with prompt template
    - Receive and display suggested commit message
    - Allow user to accept, edit, or regenerate
@@ -70,7 +74,7 @@ This extends the current `commit` command functionality by adding intelligent co
 ### Codebase
 
 - **New Files**: `cmd/aiCommit.go`, `ai/types.go`, `ai/openai.go`, `ai/claude.go`, `ai/vertexai.go`, `ai/types_test.go`, `ai/vertexai_test.go`
-- **Modified Files**: `helper/config.go` (new config fields), `common/common.go` (config struct), `README.md` (documentation), `AGENTS.md` (provider list)
+- **Modified Files**: `helper/repo.go` (fix GetStagedDiff to read index blobs, add proper unified diff format, add GetWorkingTreeDiff), `helper/config.go` (new config fields), `common/common.go` (config struct), `README.md` (documentation), `AGENTS.md` (provider list)
 - **Dependencies**: New Go modules - `github.com/golang-jwt/jwt/v5` for Vertex AI JWT authentication
 
 ### Configuration
