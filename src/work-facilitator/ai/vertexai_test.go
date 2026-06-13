@@ -8,12 +8,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"golang.org/x/oauth2/google"
 )
 
 const dummyPrivateKey = "-----BEGIN PRIVATE KEY-----\nDUMMY\n-----END PRIVATE KEY-----\n" // pragma: allowlist secret
+
+// escapeForJSONString escapes a string for embedding in a JSON string literal.
+func escapeForJSONString(s string) string {
+	// Replace newlines with \\n and other special chars
+	result := strings.ReplaceAll(s, "\\", "\\\\")
+	result = strings.ReplaceAll(result, "\"", "\\\"")
+	result = strings.ReplaceAll(result, "\n", "\\n")
+	result = strings.ReplaceAll(result, "\r", "\\r")
+	result = strings.ReplaceAll(result, "\t", "\\t")
+	return result
+}
 
 func TestParseModelString(t *testing.T) {
 	tests := []struct {
@@ -95,15 +107,15 @@ func TestNewVertexAIProvider(t *testing.T) {
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`, dummyPrivateKey)
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%%40test-project.iam.gserviceaccount.com"
+	}`, escapeForJSONString(dummyPrivateKey))
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
 	}
 
 	impersonatedKeyPath := filepath.Join(tmpDir, "impersonated-key.json")
-	impersonatedKeyContent := \`{
+	impersonatedKeyContent := `{
 		"type": "impersonated_service_account",
 		"service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@test-project.iam.gserviceaccount.com:generateAccessToken",
 		"source_credentials": {
@@ -223,8 +235,8 @@ func TestNewVertexAIProviderParsing(t *testing.T) {
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`, dummyPrivateKey)
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%%40test-project.iam.gserviceaccount.com"
+	}`, escapeForJSONString(dummyPrivateKey))
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
@@ -293,8 +305,8 @@ func TestVertexAIProviderValidate(t *testing.T) {
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`, dummyPrivateKey)
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%%40test-project.iam.gserviceaccount.com"
+	}`, escapeForJSONString(dummyPrivateKey))
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
@@ -383,8 +395,8 @@ func TestVertexAIProviderValidatePublisher(t *testing.T) {
 		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 		"token_uri": "https://oauth2.googleapis.com/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%40test-project.iam.gserviceaccount.com"
-	}`, dummyPrivateKey)
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/test%%40test-project.iam.gserviceaccount.com"
+	}`, escapeForJSONString(dummyPrivateKey))
 
 	if err := os.WriteFile(keyPath, []byte(keyContent), 0600); err != nil {
 		t.Fatalf("Failed to create test key file: %v", err)
