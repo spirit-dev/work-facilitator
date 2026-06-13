@@ -924,8 +924,24 @@ func branchExists(branch string) bool {
 	return branchExists
 }
 
-// GetStagedDiff returns the git diff of staged changes
+// GetStagedDiff returns the git diff of staged changes (HEAD vs index blobs).
+// It reads staged content from git index blobs, not the working tree,
+// ensuring unstaged modifications never leak into the diff.
 func GetStagedDiff() (string, error) {
+	return getDiff(false) // false = read from index blobs
+}
+
+// GetWorkingTreeDiff returns the git diff including working-tree modifications
+// for staged files (HEAD vs working directory). Used with the -U flag.
+// Only files that have staged entries in the index are included;
+// files not in the index are excluded regardless of modifications.
+func GetWorkingTreeDiff() (string, error) {
+	return getDiff(true) // true = read from working tree
+}
+
+// getDiff is the core diff function. When useWorktree is false, it reads staged
+// file content from git index blobs. When true, it reads from the working tree.
+func getDiff(useWorktree bool) (string, error) {
 	w, err := repo.Worktree()
 	if err != nil {
 		return "", fmt.Errorf("failed to get worktree: %w", err)
@@ -971,7 +987,6 @@ func GetStagedDiff() (string, error) {
 		return "", fmt.Errorf("failed to get index: %w", err)
 	}
 
-	// Build diff string manually by comparing staged files with HEAD
 	var diffBuilder strings.Builder
 
 	for _, entry := range idx.Entries {
@@ -984,41 +999,24 @@ func GetStagedDiff() (string, error) {
 			headContent, _ = headFile.Contents()
 		}
 
-		// Get staged content
-		stagedContent, err := w.Filesystem.Open(filePath)
-		var stagedBytes []byte
-		if err == nil {
-			stagedBytes, _ = io.ReadAll(stagedContent)
-			stagedContent.Close()
+		// Get staged/new content: from index blob or working tree
+		var newContent string
+		if useWorktree {
+			newContent = readWorkingTreeFile(w, filePath)
+		} else {
+			newContent = readIndexBlob(filePath, entry.Hash)
 		}
 
 		// Only include if there's a difference
-		if headContent != string(stagedBytes) {
+		if headContent != newContent {
 			diffBuilder.WriteString(fmt.Sprintf("diff --git a/%s b/%s\n", filePath, filePath))
 			diffBuilder.WriteString(fmt.Sprintf("--- a/%s\n", filePath))
 			diffBuilder.WriteString(fmt.Sprintf("+++ b/%s\n", filePath))
 
-			// Simple line-by-line diff
 			headLines := strings.Split(headContent, "\n")
-			stagedLines := strings.Split(string(stagedBytes), "\n")
+			newLines := strings.Split(newContent, "\n")
 
-			maxLines := len(headLines)
-			if len(stagedLines) > maxLines {
-				maxLines = len(stagedLines)
-			}
-
-			for i := 0; i < maxLines; i++ {
-				if i < len(headLines) && i < len(stagedLines) {
-					if headLines[i] != stagedLines[i] {
-						diffBuilder.WriteString(fmt.Sprintf("-%s\n", headLines[i]))
-						diffBuilder.WriteString(fmt.Sprintf("+%s\n", stagedLines[i]))
-					}
-				} else if i < len(headLines) {
-					diffBuilder.WriteString(fmt.Sprintf("-%s\n", headLines[i]))
-				} else if i < len(stagedLines) {
-					diffBuilder.WriteString(fmt.Sprintf("+%s\n", stagedLines[i]))
-				}
-			}
+			diffBuilder.WriteString(formatUnifiedDiff(headLines, newLines, 3))
 		}
 	}
 
@@ -1027,8 +1025,282 @@ func GetStagedDiff() (string, error) {
 		return "", fmt.Errorf("no diff generated")
 	}
 
-	log.Debugln("Generated staged diff, length:", len(diff))
+	log.Debugln("Generated diff, length:", len(diff))
 	return diff, nil
+}
+
+// readIndexBlob reads a staged file's content from the git object store (index blob).
+func readIndexBlob(filePath string, hash plumbing.Hash) string {
+	obj, err := repo.Storer.EncodedObject(plumbing.BlobObject, hash)
+	if err != nil {
+		log.Debugf("Failed to get blob for %s: %v\n", filePath, err)
+		return ""
+	}
+
+	reader, err := obj.Reader()
+	if err != nil {
+		log.Debugf("Failed to read blob for %s: %v\n", filePath, err)
+		return ""
+	}
+	defer reader.Close()
+
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		log.Debugf("Failed to read blob content for %s: %v\n", filePath, err)
+		return ""
+	}
+
+	return string(content)
+}
+
+// readWorkingTreeFile reads a file's current content from the working tree.
+func readWorkingTreeFile(w *git.Worktree, filePath string) string {
+	f, err := w.Filesystem.Open(filePath)
+	if err != nil {
+		log.Debugf("Failed to open file %s: %v\n", filePath, err)
+		return ""
+	}
+	defer f.Close()
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		log.Debugf("Failed to read file %s: %v\n", filePath, err)
+		return ""
+	}
+
+	return string(content)
+}
+
+// diffOp represents a single diff operation
+type diffOp struct {
+	action byte   // '+', '-', or ' '
+	line   string
+}
+
+// formatUnifiedDiff produces a unified diff string with context lines.
+// contextLines specifies how many unchanged lines to show around each hunk.
+func formatUnifiedDiff(oldLines, newLines []string, contextLines int) string {
+	if len(oldLines) == 0 && len(newLines) == 0 {
+		return ""
+	}
+
+	ops := computeDiffOps(oldLines, newLines)
+	hunks := buildHunks(ops, contextLines)
+
+	var buf strings.Builder
+	for _, h := range hunks {
+		// Hunk header: @@ -oldStart,oldCount +newStart,newCount @@
+		buf.WriteString(fmt.Sprintf("@@ -%d,%d +%d,%d @@\n",
+			h.oldStart+1, h.oldCount,
+			h.newStart+1, h.newCount))
+
+		for _, line := range h.lines {
+			buf.WriteString(line)
+			buf.WriteByte('\n')
+		}
+	}
+
+	return buf.String()
+}
+
+// hunk represents a unified diff hunk
+type hunk struct {
+	oldStart, oldCount int
+	newStart, newCount int
+	lines              []string // prefixed with ' ', '-', '+'
+}
+
+// region represents a range of indices in the diff ops
+type region struct{ start, end int }
+
+// buildHunks groups diff operations into hunks with context
+func buildHunks(ops []diffOp, contextLines int) []hunk {
+	if len(ops) == 0 {
+		return nil
+	}
+
+	// Find change regions (sequences with at least one '+' or '-')
+	var regions []region
+
+	for i := 0; i < len(ops); i++ {
+		if ops[i].action != ' ' {
+			// Found a change
+			start := i
+			for i < len(ops) && (ops[i].action != ' ' ||
+				(i+1 < len(ops) && ops[i+1].action != ' ' && i-start < contextLines*2)) {
+				i++
+			}
+			regions = append(regions, region{start, i})
+		}
+	}
+
+	// Merge overlapping/nearby regions
+	merged := mergeRegions(regions, contextLines)
+
+	// Build hunks
+	var hunks []hunk
+	for _, r := range merged {
+		// Expand to include context
+		start := r.start - contextLines
+		if start < 0 {
+			start = 0
+		}
+		end := r.end + contextLines
+		if end > len(ops) {
+			end = len(ops)
+		}
+
+		// Compute hunk metrics
+		var oldStart, oldCount, newStart, newCount int
+		oldStartSet, newStartSet := false, false
+		var lines []string
+
+		for i := start; i < end; i++ {
+			op := ops[i]
+			switch op.action {
+			case ' ':
+				if !oldStartSet {
+					oldStart = findOldPrefixCount(ops, start)
+					oldStartSet = true
+				}
+				if !newStartSet {
+					newStart = findNewPrefixCount(ops, start)
+					newStartSet = true
+				}
+				oldCount++
+				newCount++
+				lines = append(lines, " "+op.line)
+			case '-':
+				if !oldStartSet {
+					oldStart = findOldPrefixCount(ops, start)
+					oldStartSet = true
+				}
+				if !newStartSet {
+					newStart = findNewPrefixCount(ops, start)
+					newStartSet = true
+				}
+				oldCount++
+				lines = append(lines, "-"+op.line)
+			case '+':
+				if !oldStartSet {
+					oldStart = findOldPrefixCount(ops, start)
+					oldStartSet = true
+				}
+				if !newStartSet {
+					newStart = findNewPrefixCount(ops, start)
+					newStartSet = true
+				}
+				newCount++
+				lines = append(lines, "+"+op.line)
+			}
+		}
+
+		hunks = append(hunks, hunk{
+			oldStart: oldStart,
+			oldCount: oldCount,
+			newStart: newStart,
+			newCount: newCount,
+			lines:    lines,
+		})
+	}
+
+	return hunks
+}
+
+// findOldPrefixCount counts lines in old that appear before the given index
+func findOldPrefixCount(ops []diffOp, endIdx int) int {
+	count := 0
+	for i := 0; i < endIdx && i < len(ops); i++ {
+		if ops[i].action == ' ' || ops[i].action == '-' {
+			count++
+		}
+	}
+	return count
+}
+
+// findNewPrefixCount counts lines in new that appear before the given index
+func findNewPrefixCount(ops []diffOp, endIdx int) int {
+	count := 0
+	for i := 0; i < endIdx && i < len(ops); i++ {
+		if ops[i].action == ' ' || ops[i].action == '+' {
+			count++
+		}
+	}
+	return count
+}
+
+// mergeRegions merges regions that overlap or are close enough to share context
+func mergeRegions(regions []region, contextLines int) []region {
+	if len(regions) == 0 {
+		return nil
+	}
+
+	merged := []region{regions[0]}
+	for i := 1; i < len(regions); i++ {
+		last := &merged[len(merged)-1]
+		if regions[i].start-contextLines <= last.end+contextLines {
+			// Overlap or close enough: merge
+			if regions[i].end > last.end {
+				last.end = regions[i].end
+			}
+		} else {
+			merged = append(merged, regions[i])
+		}
+	}
+	return merged
+}
+
+// computeDiffOps computes diff operations between old and new lines
+func computeDiffOps(oldLines, newLines []string) []diffOp {
+	table := buildLCSTable(oldLines, newLines)
+	ops := backtrackOps(table, oldLines, newLines, len(oldLines), len(newLines))
+	return ops
+}
+
+// buildLCSTable builds the LCS dynamic programming table
+func buildLCSTable(oldLines, newLines []string) [][]int {
+	m, n := len(oldLines), len(newLines)
+	table := make([][]int, m+1)
+	for i := range table {
+		table[i] = make([]int, n+1)
+	}
+
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			if oldLines[i-1] == newLines[j-1] {
+				table[i][j] = table[i-1][j-1] + 1
+			} else if table[i-1][j] >= table[i][j-1] {
+				table[i][j] = table[i-1][j]
+			} else {
+				table[i][j] = table[i][j-1]
+			}
+		}
+	}
+
+	return table
+}
+
+// backtrackOps reconstructs the diff operations from the LCS table
+func backtrackOps(table [][]int, oldLines, newLines []string, i, j int) []diffOp {
+	if i == 0 && j == 0 {
+		return nil
+	}
+
+	if i > 0 && j > 0 && oldLines[i-1] == newLines[j-1] {
+		ops := backtrackOps(table, oldLines, newLines, i-1, j-1)
+		ops = append(ops, diffOp{' ', oldLines[i-1]})
+		return ops
+	}
+
+	if j > 0 && (i == 0 || table[i][j-1] >= table[i-1][j]) {
+		ops := backtrackOps(table, oldLines, newLines, i, j-1)
+		ops = append(ops, diffOp{'+', newLines[j-1]})
+		return ops
+	}
+
+	ops := backtrackOps(table, oldLines, newLines, i-1, j)
+	ops = append(ops, diffOp{'-', oldLines[i-1]})
+	return ops
 }
 
 // FilterDiffByPatterns filters out files matching exclude patterns from the diff
