@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"spirit-dev/work-facilitator/work-facilitator/ai"
+	"spirit-dev/work-facilitator/work-facilitator/common"
 	"spirit-dev/work-facilitator/work-facilitator/helper"
 
 	log "github.com/sirupsen/logrus"
@@ -21,10 +22,10 @@ import (
 
 var (
 	// Cmd args
-	noPushAICommitArg        bool
-	allFilesAICommitArg      bool
-	forceAICommitArg         bool
-	skipPreCommitAICommitArg bool
+	noPushAICommitArg          bool
+	allFilesAICommitArg        bool
+	forceAICommitArg           bool
+	skipPreCommitAICommitArg   bool
 	includeUnstagedAICommitArg bool
 
 	// local variables
@@ -74,6 +75,14 @@ func aiCommitPreRunCommand(cmd *cobra.Command, args []string) {
 func aiCommitCommand(cmd *cobra.Command, args []string) {
 	log.Debug("run ai-commit")
 
+	// Resolve effective branch and pre-message: workflow data when a workflow
+	// is active, current git HEAD otherwise (only reachable with -f flag).
+	headBranch := ""
+	if !RootRepo.HasCurrentWorkflow {
+		headBranch = helper.RepoHead().Name().Short()
+	}
+	effectiveBranch, effectivePreMessage := resolveEffectiveCommitContext(RootRepo, headBranch)
+
 	// Stage files if requested
 	if allFilesAICommitArg {
 		helper.SpinStartDisplay("Git add all files")
@@ -117,7 +126,7 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 	options := &ai.GenerateOptions{
 		MaxTokens:   RootConfig.AIMaxTokens,
 		Temperature: RootConfig.AITemperature,
-		BranchName:  RootRepo.CurrentWorkflowData.Branch,
+		BranchName:  effectiveBranch,
 	}
 	if RootConfig.EnforceStandard {
 		options.CommitStandard = RootConfig.CommitExpr
@@ -135,14 +144,8 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 
 	// Validate against commit standard if enforced
 	if RootConfig.EnforceStandard {
-		preMessageCommit := ""
-		if RootRepo.HasCurrentWorkflow {
-			preMessageCommit = RootRepo.CurrentWorkflowData.Commit
-		}
-		activeBranch := RootRepo.CurrentWorkflowData.Branch
-
-		fullMessage := fmt.Sprintf("%s%s", preMessageCommit, finalMessage)
-		if !helper.TestStandard(fullMessage, RootConfig.CommitExpr, activeBranch, RootConfig.BranchExpr, RootConfig.EnforceStandard) {
+		fullMessage := fmt.Sprintf("%s%s", effectivePreMessage, finalMessage)
+		if !helper.TestStandard(fullMessage, RootConfig.CommitExpr, effectiveBranch, RootConfig.BranchExpr, RootConfig.EnforceStandard) {
 			log.Fatalln("Commit message does not comply with standard")
 		}
 		finalMessage = fullMessage
@@ -156,7 +159,7 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 	// git push
 	if !noPushAICommitArg {
 		helper.SpinUpdateDisplay("Git push")
-		helper.RepoPush(RootRepo.PublicAuthKey, RootRepo.CurrentWorkflowData.Branch)
+		helper.RepoPush(RootRepo.PublicAuthKey, effectiveBranch)
 	}
 
 	helper.SpinUpdateDisplay("Git operations")
@@ -168,6 +171,17 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 
 	// Say GoodBye
 	helper.ByeByeDisplay()
+}
+
+// resolveEffectiveCommitContext returns the branch and workflow pre-message
+// prefix used by ai-commit. Inside a workflow both come from the workflow
+// data; outside, the branch is the current git HEAD branch and there is no
+// prefix.
+func resolveEffectiveCommitContext(repo common.Repo, headBranch string) (branch, preMessage string) {
+	if repo.HasCurrentWorkflow {
+		return repo.CurrentWorkflowData.Branch, repo.CurrentWorkflowData.Commit
+	}
+	return headBranch, ""
 }
 
 // createAIProvider creates the configured AI provider from RootConfig.
