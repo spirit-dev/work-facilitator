@@ -20,6 +20,7 @@ Cobra CLI commands for work-facilitator: aiCommit, commit, init, list, open, pau
 
 - New commands go in one file per command, named after the command
 - Keep flags and UX consistent with existing commands (e.g. `initLazy.go` variants)
+- `-f/--force-commit` on `ai-commit`/`commit` bypasses the not-in-workflow check; on `ai-commit` it also bypasses commit/branch standard compliance (`EnforceStandard` validation)
 
 ## Verification
 
