@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"spirit-dev/work-facilitator/work-facilitator/common"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/spf13/cobra"
 )
@@ -81,6 +83,39 @@ func TestAICommitCommand_SkipPreCommit(t *testing.T) {
 		// Verify flag was not set
 		if skipPreCommitAICommitArg {
 			t.Error("Expected skipPreCommitAICommitArg to be false when -s flag is not passed")
+		}
+	})
+}
+
+func TestResolveEffectiveCommitContext(t *testing.T) {
+	// Outside a workflow: branch comes from current git HEAD, no pre-message
+	t.Run("outside workflow uses HEAD branch and empty pre-message", func(t *testing.T) {
+		repo := common.Repo{HasCurrentWorkflow: false}
+		branch, preMessage := resolveEffectiveCommitContext(repo, "feature-x")
+		if branch != "feature-x" {
+			t.Errorf("Expected branch 'feature-x', got '%s'", branch)
+		}
+		if preMessage != "" {
+			t.Errorf("Expected empty preMessage, got '%s'", preMessage)
+		}
+	})
+
+	// Inside a workflow: branch and pre-message come from workflow data
+	// (regression guard: -f must not change the workflow path)
+	t.Run("inside workflow uses workflow data", func(t *testing.T) {
+		repo := common.Repo{
+			HasCurrentWorkflow: true,
+			CurrentWorkflowData: common.Workflow{
+				Branch: "wf-branch",
+				Commit: "wf-prefix: ",
+			},
+		}
+		branch, preMessage := resolveEffectiveCommitContext(repo, "ignored-head")
+		if branch != "wf-branch" {
+			t.Errorf("Expected branch 'wf-branch', got '%s'", branch)
+		}
+		if preMessage != "wf-prefix: " {
+			t.Errorf("Expected preMessage 'wf-prefix: ', got '%s'", preMessage)
 		}
 	})
 }
