@@ -142,8 +142,8 @@ func aiCommitCommand(cmd *cobra.Command, args []string) {
 	// Interactive review with regeneration support
 	finalMessage := reviewAndEditMessage(commitMessageAICommit, aiProvider, diff, options, timeout)
 
-	// Validate against commit standard if enforced
-	if RootConfig.EnforceStandard {
+	// Validate against commit standard if enforced (bypassed by -f)
+	if RootConfig.EnforceStandard && !forceAICommitArg {
 		fullMessage := fmt.Sprintf("%s%s", effectivePreMessage, finalMessage)
 		if !helper.TestStandard(fullMessage, RootConfig.CommitExpr, effectiveBranch, RootConfig.BranchExpr, RootConfig.EnforceStandard) {
 			log.Fatalln("Commit message does not comply with standard")
