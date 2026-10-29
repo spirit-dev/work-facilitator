@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	c "spirit-dev/work-facilitator/work-facilitator/common"
 	"strconv"
@@ -13,6 +14,8 @@ import (
 	"time"
 
 	giturls "github.com/whilp/git-urls"
+
+	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -68,7 +71,7 @@ func NewRepo(wfConfig c.Config) c.Repo {
 	// Open repo
 	openRepo()
 
-	// Build auth is ssh key is set
+	// Build auth is ssh key is set, else fall back to ssh agent or default keys
 	var publicAuthKey *ssh.PublicKeys
 	if wfConfig.HasSshKeyId {
 		var password string
@@ -79,6 +82,8 @@ func NewRepo(wfConfig c.Config) c.Repo {
 			}
 			log.Fatalln(err)
 		}
+	} else {
+		publicAuthKey = buildDefaultAuth()
 	}
 
 	// repo base path
@@ -708,6 +713,30 @@ func repoConfigInitWfSetup() error {
 	return err
 }
 
+// buildDefaultAuth builds SSH auth when no ssh_key_id is configured: tries the
+// user's default key files, like native git does. Returning nil keeps go-git's
+// default auth (ssh agent), so agent-only setups still work.
+func buildDefaultAuth() *ssh.PublicKeys {
+	home, homeErr := homedir.Dir()
+	if homeErr != nil {
+		return nil
+	}
+	for _, name := range []string{"id_ed25519", "id_ecdsa", "id_rsa"} {
+		path := filepath.Join(home, ".ssh", name)
+		if _, statErr := os.Stat(path); statErr != nil {
+			continue
+		}
+		auth, keyErr := ssh.NewPublicKeysFromFile("git", path, "")
+		if keyErr != nil {
+			log.Warnf("Ignoring ssh key %s: %v", path, keyErr)
+			continue
+		}
+		log.Debugln("Using ssh key auth: " + path)
+		return auth
+	}
+	return nil
+}
+
 func repoGetRemoteDefaultBranch(pubKey *ssh.PublicKeys) (string, error) {
 
 	rem, remErr := repo.Remote(originValue)
@@ -1073,7 +1102,7 @@ func readWorkingTreeFile(w *git.Worktree, filePath string) string {
 
 // diffOp represents a single diff operation
 type diffOp struct {
-	action byte   // '+', '-', or ' '
+	action byte // '+', '-', or ' '
 	line   string
 }
 
