@@ -17,6 +17,7 @@ Shared helpers: Viper config (`config.go`), display, git hooks (`hooks.go`), rep
 ## Work Guidance
 
 - Keep helpers provider- and command-agnostic; anything specific to a command belongs in `cmd/`
+- SSH auth (`repo.go`): explicit key via `global.ssh_key_id`, else fallback to `~/.ssh` default keys (id_ed25519/id_ecdsa/id_rsa), else go-git default (ssh agent); never fatal when no key is found
 
 ## Verification
 
