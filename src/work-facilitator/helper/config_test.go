@@ -9,13 +9,13 @@ import (
 
 func TestTestStandard(t *testing.T) {
 	tests := []struct {
-		name            string
-		commit          string
-		commitExpr      string
-		branch          string
-		branchExpr      string
+		name             string
+		commit           string
+		commitExpr       string
+		branch           string
+		branchExpr       string
 		standardEnforced bool
-		expected        bool
+		expected         bool
 	}{
 		{
 			name:             "enforced with matching commit and branch",
