@@ -4,6 +4,8 @@ Copyright © 2024 Jean Bordat bordat.jean@gmail.com
 package helper
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -244,5 +246,31 @@ func TestMergeRegions_TooFar(t *testing.T) {
 	merged := mergeRegions(regions, 3)
 	if len(merged) != 2 {
 		t.Errorf("Expected 2 separate regions, got %d", len(merged))
+	}
+}
+
+func TestBuildDefaultAuth(t *testing.T) {
+	// Temp home without ssh keys: must return nil (go-git then uses its default
+	// ssh-agent auth), never a fatal error.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	auth := buildDefaultAuth()
+	if auth != nil {
+		t.Errorf("Expected nil auth when no ssh key is present, got: %v", auth)
+	}
+
+	// Invalid key file: must be ignored, still returning nil.
+	sshDir := filepath.Join(home, ".ssh")
+	if err := os.MkdirAll(sshDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	invalidKey := filepath.Join(sshDir, "id_ed25519")
+	if err := os.WriteFile(invalidKey, []byte("not a key"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	auth = buildDefaultAuth()
+	if auth != nil {
+		t.Errorf("Expected nil auth for invalid key file, got: %v", auth)
 	}
 }
