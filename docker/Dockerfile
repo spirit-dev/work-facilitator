@@ -19,7 +19,7 @@ RUN addgroup -S application -g 1000 && adduser -S application -u 1000 -G applica
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
 
-FROM golangci/golangci-lint:v1.62.0-alpine@sha256:a94c2da655a1f3e66bb7d2c9232324def349f2ba56a3d715d89e83d98f5bd933 AS lint
+FROM golangci/golangci-lint:v2.15.0-alpine@sha256:2ba875b990f1d8501ad4ec19be1ea0701e316ec3a4b764f7b129f62f01318bbf AS lint
 
 # Mainly used to debug lint gitlab ci stage
 
