@@ -20,7 +20,7 @@ repos:
 
   # A smarter Dockerfile linter that helps you build best practice Docker images
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.15.1
     hooks:
       - id: hadolint-docker
 
@@ -34,13 +34,13 @@ repos:
 
   # GitLeaks
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.27.2
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 
   # Markdown TOC generator
   - repo: https://github.com/jsh9/markdown-toc-creator
-    rev: 0.0.10
+    rev: 0.1.3
     hooks:
       - id: markdown-toc-creator
         args:
@@ -72,7 +72,7 @@ repos:
 
   # Command Line Interface for MarkdownLint
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.45.0
+    rev: v0.50.0
     hooks:
       - id: markdownlint
         args: ["-f"]
