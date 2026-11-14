@@ -84,7 +84,7 @@ func ShowSummary(cfg c.Config, wf c.Workflow) {
 
 	panels := pterm.Panels{
 		{
-			{Data: pterm.DefaultBox.WithRightPadding(10).WithLeftPadding(10).Sprintf(wf.Branch)},
+			{Data: pterm.DefaultBox.WithRightPadding(10).WithLeftPadding(10).Sprint(wf.Branch)},
 		},
 		{
 			{Data: pterm.Cyan(title)},
