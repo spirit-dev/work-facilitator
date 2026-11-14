@@ -39,3 +39,6 @@ dist/*
 
 __debug_bin*
 src/work-facilitator/work-facilitator
+
+# Go module cache (GOPATH layout used by CI jobs and local docker runs)
+.go/
