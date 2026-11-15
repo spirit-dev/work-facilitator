@@ -9,6 +9,10 @@
 
 <!--TOC-->
 
+______________________________________________________________________
+
+**Table of Contents**
+
 - [Presentation](#presentation)
 - [Features](#features)
   - [version](#version)
@@ -30,6 +34,8 @@
   - [use](#use)
   - [initLazy](#initlazy)
   - [completion](#completion)
+
+______________________________________________________________________
 
 <!--TOC-->
 
