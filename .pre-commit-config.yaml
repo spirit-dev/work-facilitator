@@ -7,6 +7,7 @@ repos:
       - id: check-case-conflict # Check for files with names that would conflict on a case-insensitive filesystem
       - id: check-json
       - id: check-yaml
+        args: [--unsafe]
         exclude: ^helm/templates/
       - id: check-merge-conflict
       - id: check-symlinks

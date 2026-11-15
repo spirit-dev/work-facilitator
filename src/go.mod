@@ -2,8 +2,6 @@ module spirit-dev/work-facilitator
 
 go 1.26.0
 
-toolchain go1.27.4
-
 require (
 	github.com/andygrunwald/go-jira v1.17.0
 	github.com/go-git/go-git/v5 v5.19.3
